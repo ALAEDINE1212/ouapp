@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OmniVision AI — Ambient Intelligence for Smart Glasses</title>
+  <meta name="description" content="OmniVision AI is a zero-friction ambient assistant for smart glasses and wearables. It sees what you see and logs nutrition, focus and biometrics automatically." />
+  <meta name="theme-color" content="#000000" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'ink-900': '#000000',
+            'ink-800': '#0D0D11',
+            'ink-700': '#16161E',
+            'neon-cyan': '#00F2FE',
+            'neon-indigo': '#4FACFE',
+            'neon-emerald': '#00F5A0',
+            'neon-amber': '#FFB547',
+            'neon-rose': '#FF4D6D'
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['"SF Mono"', '"JetBrains Mono"', 'ui-monospace', 'monospace']
+          },
+          letterSpacing: { tightest: '-0.045em' }
+        }
+      }
+    };
+  </script>
+
+  <!-- Three.js & Lucide -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-2: #0D0D11;
+      --bg-3: #16161E;
+      --cyan: #00F2FE;
+      --indigo: #4FACFE;
+      --emerald: #00F5A0;
+      --amber: #FFB547;
+      --rose: #FF4D6D;
+      --line: rgba(255, 255, 255, 0.08);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: #F5F5F7;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+    section[id] { scroll-margin-top: 84px; }
+    ::selection { background: rgba(0, 242, 254, 0.3); color: #fff; }
+
+    /* ---------- Surfaces ---------- */
+    .glass {
+      background: linear-gradient(180deg, rgba(28, 28, 38, 0.62), rgba(16, 16, 22, 0.55));
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      backdrop-filter: blur(18px) saturate(150%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 20px 60px -30px rgba(0, 0, 0, 0.8);
+    }
+    .glass-strong {
+      background: rgba(10, 10, 14, 0.72);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      backdrop-filter: blur(24px) saturate(160%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .hairline { border-color: var(--line); }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 56px 56px;
+      -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
+    }
+    .text-gradient {
+      background: linear-gradient(92deg, var(--cyan) 0%, var(--indigo) 45%, var(--emerald) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .text-soft { color: rgba(235, 235, 245, 0.62); }
+    .text-faint { color: rgba(235, 235, 245, 0.38); }
+
+    /* Gradient border card */
+    .ring-gradient { position: relative; }
+    .ring-gradient::before {
+      content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+      background: linear-gradient(135deg, rgba(0,242,254,0.55), rgba(79,172,254,0.15) 40%, rgba(0,245,160,0.45));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+    }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+      border-radius: 999px; font-weight: 600; letter-spacing: -0.01em;
+      transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s, background .35s, border-color .35s, color .35s;
+      will-change: transform;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      color: #031018;
+      background: linear-gradient(92deg, var(--cyan), var(--indigo));
+      box-shadow: 0 8px 30px -8px rgba(0, 242, 254, 0.55), inset 0 1px 0 rgba(255,255,255,0.5);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 44px -8px rgba(0, 242, 254, 0.75), inset 0 1px 0 rgba(255,255,255,0.5); }
+    .btn-ghost {
+      color: #fff; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.24); transform: translateY(-2px); }
+    .btn .arrow { transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+    .btn:hover .arrow { transform: translateX(3px); }
+
+    /* ---------- Navbar ---------- */
+    #navbar { transition: background .4s, border-color .4s, backdrop-filter .4s; border-bottom: 1px solid transparent; }
+    #navbar.scrolled {
+      background: rgba(0, 0, 0, 0.62);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom-color: rgba(255,255,255,0.07);
+    }
+    .nav-link { position: relative; color: rgba(235,235,245,0.64); transition: color .25s; }
+    .nav-link:hover, .nav-link.active { color: #fff; }
+    .nav-link::after {
+      content: ""; position: absolute; left: 50%; bottom: -6px; width: 0; height: 2px; border-radius: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--emerald)); transform: translateX(-50%); transition: width .3s;
+    }
+    .nav-link.active::after { width: 16px; }
+    #mobile-menu { transition: opacity .3s, transform .3s; }
+    #mobile-menu.closed { opacity: 0; transform: translateY(-8px); pointer-events: none; }
+
+    /* ---------- Reveal ---------- */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 1s cubic-bezier(.2,.8,.2,1), transform 1s cubic-bezier(.2,.8,.2,1); }
+    .reveal.in { opacity: 1; transform: none; }
+    .reveal[data-delay="1"] { transition-delay: .08s; }
+    .reveal[data-delay="2"] { transition-delay: .16s; }
+    .reveal[data-delay="3"] { transition-delay: .24s; }
+
+    /* ---------- Hero ---------- */
+    #hero-canvas canvas { display: block; width: 100% !important; height: 100% !important; }
+    .float-chip { animation: float 7s ease-in-out infinite; }
+    .float-chip:nth-child(2) { animation-delay: -2.3s; }
+    .float-chip:nth-child(3) { animation-delay: -4.6s; }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    .pulse-dot { position: relative; }
+    .pulse-dot::after {
+      content: ""; position: absolute; inset: -4px; border-radius: 999px; border: 1px solid currentColor;
+      animation: ping 1.8s cubic-bezier(0,0,.2,1) infinite; opacity: .6;
+    }
+    @keyframes ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+    .scroll-cue { animation: cue 2.2s ease-in-out infinite; }
+    @keyframes cue { 0%,100% { transform: translateY(0); opacity: .4; } 50% { transform: translateY(8px); opacity: 1; } }
+
+    /* ---------- Feature cards ---------- */
+    .feature-card { transition: transform .5s cubic-bezier(.2,.8,.2,1), border-color .4s; }
+    .feature-card:hover { transform: translateY(-6px); border-color: rgba(255,255,255,0.16); }
+    .spotlight { position: relative; overflow: hidden; }
+    .spotlight::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .4s;
+      background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(0, 242, 254, 0.09), transparent 45%);
+    }
+    .spotlight:hover::after { opacity: 1; }
+
+    /* ---------- HUD ---------- */
+    .lens {
+      position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 28px;
+      background: #050507; isolation: isolate;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 40px 120px -40px rgba(0, 242, 254, 0.35);
+    }
+    .lens::after { /* lens vignette + glass tint */
+      content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 30;
+      background:
+        radial-gradient(ellipse 85% 85% at 50% 50%, transparent 55%, rgba(0,0,0,0.65) 100%),
+        linear-gradient(115deg, rgba(255,255,255,0.06) 0%, transparent 28%, transparent 70%, rgba(79,172,254,0.06) 100%);
+    }
+    .hud-scene { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility .6s; }
+    .hud-scene.active { opacity: 1; visibility: visible; }
+    .hud-text { font-size: clamp(9px, 1.25vw, 13px); }
+    .hud-mono { font-family: "SF Mono", "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.02em; }
+    .hud-panel {
+      background: rgba(3, 12, 18, 0.55);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 242, 254, 0.28);
+      box-shadow: 0 0 24px -6px rgba(0, 242, 254, 0.35), inset 0 0 20px -12px rgba(0,242,254,.6);
+    }
+    .bbox {
+      position: absolute; border: 1px solid rgba(0, 242, 254, 0.55); border-radius: 6px;
+      box-shadow: 0 0 30px -4px rgba(0,242,254,.35), inset 0 0 30px -10px rgba(0,242,254,.35);
+      opacity: 0; transform: scale(1.08); transition: opacity .5s ease, transform .6s cubic-bezier(.2,.8,.2,1);
+    }
+    .bbox.show { opacity: 1; transform: scale(1); }
+    .bbox .c { position: absolute; width: 14px; height: 14px; border-color: var(--cyan); border-style: solid; }
+    .bbox .c.tl { top: -2px; left: -2px; border-width: 2px 0 0 2px; border-top-left-radius: 6px; }
+    .bbox .c.tr { top: -2px; right: -2px; border-width: 2px 2px 0 0; border-top-right-radius: 6px; }
+    .bbox .c.bl { bottom: -2px; left: -2px; border-width: 0 0 2px 2px; border-bottom-left-radius: 6px; }
+    .bbox .c.br { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; border-bottom-right-radius: 6px; }
+    .bbox.emerald { border-color: rgba(0,245,160,.55); box-shadow: 0 0 30px -4px rgba(0,245,160,.3), inset 0 0 30px -10px rgba(0,245,160,.3); }
+    .bbox.emerald .c { border-color: var(--emerald); }
+    .bbox-label {
+      position: absolute; left: -1px; bottom: calc(100% + 6px); white-space: nowrap;
+      padding: 3px 8px; border-radius: 6px; color: #021016; font-weight: 600;
+      background: linear-gradient(90deg, var(--cyan), var(--indigo));
+    }
+    .bbox.emerald .bbox-label { background: linear-gradient(90deg, var(--emerald), #7CFFCB); }
+    .scanline {
+      position: absolute; left: 0; right: 0; height: 22%; top: -22%; pointer-events: none; z-index: 5; opacity: 0;
+      background: linear-gradient(180deg, transparent, rgba(0, 242, 254, 0.08) 60%, rgba(0, 242, 254, 0.55) 98%, transparent);
+    }
+    .scanning .scanline { animation: scan 1.6s cubic-bezier(.45,.05,.55,.95) 1; }
+    @keyframes scan { 0% { top: -22%; opacity: 1; } 100% { top: 100%; opacity: 1; } }
+    .hud-corner { position: absolute; width: 26px; height: 26px; border-color: rgba(255,255,255,.35); border-style: solid; z-index: 20; }
+    .reticle { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; transform: translate(-50%, -50%); z-index: 20; opacity: .5; }
+    .reticle::before, .reticle::after { content: ""; position: absolute; background: rgba(255,255,255,.7); }
+    .reticle::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+    .reticle::after { top: 50%; left: 0; right: 0; height: 1px; }
+    .toast {
+      opacity: 0; transform: translateY(10px) scale(.98); transition: opacity .45s ease, transform .45s cubic-bezier(.2,.8,.2,1);
+    }
+    .toast.show { opacity: 1; transform: none; }
+    .hud-tab { transition: background .3s, color .3s, border-color .3s, box-shadow .3s; }
+    .hud-tab[aria-selected="true"] {
+      background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(0,242,254,0.4);
+      box-shadow: 0 0 0 1px rgba(0,242,254,0.15), 0 10px 30px -12px rgba(0,242,254,0.5);
+    }
+    .hud-tab[aria-selected="true"] .tab-icon { color: var(--cyan); }
+    .macro-bar { height: 4px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    .macro-bar > i { display: block; height: 100%; width: 0; border-radius: inherit; transition: width 1.2s cubic-bezier(.2,.8,.2,1); }
+    .road-dash { animation: road 0.9s linear infinite; }
+    @keyframes road { to { stroke-dashoffset: -80; } }
+    .feed-item { animation: feedIn .5s cubic-bezier(.2,.8,.2,1); }
+    @keyframes feedIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+    .blink { animation: blink 1.2s steps(2, start) infinite; }
+    @keyframes blink { to { visibility: hidden; } }
+
+    /* ---------- Tech pipeline ---------- */
+    .phase-btn { transition: border-color .35s, background .35s, transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s; }
+    .phase-btn:hover { transform: translateY(-3px); }
+    .phase-btn[aria-pressed="true"] { border-color: rgba(0,242,254,0.45); background: rgba(0,242,254,0.05); box-shadow: 0 20px 60px -30px rgba(0,242,254,0.6); }
+    .phase-btn[data-phase="2"][aria-pressed="true"] { border-color: rgba(0,245,160,0.45); background: rgba(0,245,160,0.05); box-shadow: 0 20px 60px -30px rgba(0,245,160,0.6); }
+    .pipe-node { animation: nodeIn .6s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes nodeIn { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
+    .connector { position: relative; flex: 1 1 0; min-width: 18px; min-height: 22px; }
+    .connector::before {
+      content: ""; position: absolute; background-size: 200% 100%;
+      background-image: linear-gradient(90deg, rgba(255,255,255,.08) 0%, var(--flow, #00F2FE) 50%, rgba(255,255,255,.08) 100%);
+      animation: flow 1.6s linear infinite;
+    }
+    @media (min-width: 768px) { .connector::before { left: 0; right: 0; top: 50%; height: 2px; transform: translateY(-50%); border-radius: 2px; } }
+    @media (max-width: 767.98px) {
+      .connector::before { top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%);
+        background-image: linear-gradient(180deg, rgba(255,255,255,.08) 0%, var(--flow, #00F2FE) 50%, rgba(255,255,255,.08) 100%);
+        background-size: 100% 200%; animation-name: flowY; }
+    }
+    @keyframes flow { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+    @keyframes flowY { from { background-position: 0 100%; } to { background-position: 0 -100%; } }
+    .metric-bar { height: 6px; border-radius: 6px; background: rgba(255,255,255,0.06); overflow: hidden; }
+    .metric-bar > i { display: block; height: 100%; border-radius: inherit; transition: width 1s cubic-bezier(.2,.8,.2,1), opacity .4s; }
+
+    /* ---------- Modal ---------- */
+    #pitch-modal { transition: opacity .4s ease, visibility .4s; }
+    #pitch-modal.hidden-modal { opacity: 0; visibility: hidden; pointer-events: none; }
+    #pitch-modal .modal-sheet { transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .45s; }
+    #pitch-modal.hidden-modal .modal-sheet { transform: translateY(32px) scale(.98); opacity: 0; }
+    .modal-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) transparent; }
+    .modal-scroll::-webkit-scrollbar { width: 8px; }
+    .modal-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 8px; }
+    body.modal-open { overflow: hidden; }
+
+    /* Glow orbs */
+    .orb { position: absolute; border-radius: 999px; filter: blur(90px); pointer-events: none; opacity: .5; }
+
+    :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 10px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+
+<body class="font-sans">
+
+  <!-- ===================== NAVBAR ===================== -->
+  <header id="navbar" class="fixed top-0 inset-x-0 z-50">
+    <nav class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between" aria-label="Primary">
+      <a href="#top" class="flex items-center gap-2.5 group" aria-label="OmniVision AI home">
+        <span class="relative grid place-items-center w-8 h-8 rounded-[10px] bg-gradient-to-br from-neon-cyan via-neon-indigo to-neon-emerald shadow-[0_0_24px_-4px_rgba(0,242,254,.7)]">
+          <i data-lucide="scan-eye" class="w-[18px] h-[18px] text-black" stroke-width="2.4"></i>
+        </span>
+        <span class="text-[15px] font-semibold tracking-tight">OmniVision<span class="text-faint font-medium"> AI</span></span>
+      </a>
+
+      <ul class="hidden md:flex items-center gap-8 text-[13px] font-medium">
+        <li><a href="#features" class="nav-link">Features</a></li>
+        <li><a href="#hud-demo" class="nav-link">HUD Demo</a></li>
+        <li><a href="#tech-stack" class="nav-link">Tech Stack</a></li>
+        <li><a href="#pitch" class="nav-link">Pitch</a></li>
+      </ul>
+
+      <div class="flex items-center gap-2">
+        <button type="button" data-open-pitch class="btn btn-ghost hidden sm:inline-flex text-[13px] px-4 h-9">
+          <i data-lucide="presentation" class="w-4 h-4"></i> View Pitch Deck
+        </button>
+        <a href="#hud-demo" class="btn btn-primary hidden md:inline-flex text-[13px] px-4 h-9">Experience <i data-lucide="arrow-right" class="arrow w-4 h-4"></i></a>
+        <button id="menu-btn" type="button" class="md:hidden grid place-items-center w-10 h-10 rounded-full hover:bg-white/10 transition" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </nav>
+
+    <div id="mobile-menu" class="closed md:hidden absolute top-16 inset-x-3 glass-strong rounded-2xl p-3">
+      <a href="#features" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-[15px]">Features</a>
+      <a href="#hud-demo" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-[15px]">HUD Demo</a>
+      <a href="#tech-stack" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-[15px]">Tech Stack</a>
+      <a href="#pitch" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-[15px]">Pitch</a>
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button type="button" data-open-pitch class="btn btn-ghost h-11 text-sm">Pitch Deck</button>
+        <a href="#hud-demo" class="btn btn-primary h-11 text-sm">Experience</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ===================== HERO ===================== -->
+    <section class="relative min-h-[100svh] flex items-center overflow-hidden" aria-label="Introduction">
+      <div class="absolute inset-0 grid-bg" aria-hidden="true"></div>
+      <div class="orb w-[520px] h-[520px] bg-neon-indigo/30 -top-40 -right-20" aria-hidden="true"></div>
+      <div class="orb w-[420px] h-[420px] bg-neon-emerald/20 bottom-0 left-[-120px]" aria-hidden="true"></div>
+      <div id="hero-canvas" class="absolute inset-0 z-0" aria-hidden="true"></div>
+      <div class="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black to-transparent z-[1]" aria-hidden="true"></div>
+
+      <!-- Floating context chips -->
+      <div class="hidden lg:block absolute inset-0 z-[2] pointer-events-none" aria-hidden="true">
+        <div class="absolute right-[6%] top-[24%] float-chip glass rounded-2xl px-4 py-3 flex items-center gap-3">
+          <span class="grid place-items-center w-8 h-8 rounded-lg bg-neon-emerald/15 text-neon-emerald"><i data-lucide="utensils" class="w-4 h-4"></i></span>
+          <div><div class="text-[11px] text-faint">Auto-logged · 12:41</div><div class="text-[13px] font-semibold">Jasmine Rice · 260 kcal</div></div>
+        </div>
+        <div class="absolute right-[34%] top-[68%] float-chip glass rounded-2xl px-4 py-3 flex items-center gap-3">
+          <span class="grid place-items-center w-8 h-8 rounded-lg bg-neon-indigo/15 text-neon-indigo"><i data-lucide="brain-circuit" class="w-4 h-4"></i></span>
+          <div><div class="text-[11px] text-faint">Deep work</div><div class="text-[13px] font-semibold">Linear Algebra · 42m</div></div>
+        </div>
+        <div class="absolute right-[4%] top-[62%] float-chip glass rounded-2xl px-4 py-3 flex items-center gap-3">
+          <span class="grid place-items-center w-8 h-8 rounded-lg bg-neon-rose/15 text-neon-rose"><i data-lucide="heart-pulse" class="w-4 h-4"></i></span>
+          <div><div class="text-[11px] text-faint">WHOOP strain</div><div class="text-[13px] font-semibold">14.2 · 152 bpm</div></div>
+        </div>
+      </div>
+
+      <div class="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 w-full pt-28 pb-24">
+        <div class="max-w-2xl">
+          <a href="#tech-stack" class="reveal inline-flex items-center gap-2 rounded-full glass pl-2 pr-4 py-1.5 text-[12px] font-medium text-soft hover:text-white transition">
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-neon-cyan/10 text-neon-cyan px-2 py-0.5">
+              <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-neon-cyan text-neon-cyan"></span> New
+            </span>
+            On-device vision models, now in private beta
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </a>
+
+          <h1 class="reveal mt-7 text-[44px] leading-[1.02] sm:text-6xl lg:text-[84px] font-semibold tracking-tightest" data-delay="1">
+            Your life,<br />
+            <span class="text-gradient">logged by sight.</span>
+          </h1>
+
+          <p class="reveal mt-6 text-lg sm:text-xl text-soft leading-relaxed max-w-xl" data-delay="2">
+            OmniVision is an ambient AI that lives in your smart glasses. It sees what you see, reads your biometrics,
+            and records meals, focus and effort on its own. You never open an app.
+          </p>
+
+          <div class="reveal mt-9 flex flex-wrap items-center gap-3" data-delay="3">
+            <a href="#hud-demo" class="btn btn-primary h-12 px-6 text-[15px]">
+              Experience OmniVision <i data-lucide="arrow-right" class="arrow w-4 h-4"></i>
+            </a>
+            <button type="button" data-open-pitch class="btn btn-ghost h-12 px-6 text-[15px]">
+              <i data-lucide="presentation" class="w-4 h-4"></i> View Pitch Deck
+            </button>
+          </div>
+
+          <div class="reveal mt-12 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] text-faint" data-delay="3">
+            <span class="uppercase tracking-[0.18em]">Works with</span>
+            <span class="inline-flex items-center gap-1.5 text-soft"><i data-lucide="glasses" class="w-4 h-4"></i> Meta Ray-Ban</span>
+            <span class="inline-flex items-center gap-1.5 text-soft"><i data-lucide="watch" class="w-4 h-4"></i> Apple Watch</span>
+            <span class="inline-flex items-center gap-1.5 text-soft"><i data-lucide="activity" class="w-4 h-4"></i> WHOOP</span>
+            <span class="inline-flex items-center gap-1.5 text-soft"><i data-lucide="heart" class="w-4 h-4"></i> Apple Health</span>
+          </div>
+        </div>
+      </div>
+
+      <a href="#features" class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 text-faint hover:text-white transition flex flex-col items-center gap-2 text-[11px] uppercase tracking-[0.2em]" aria-label="Scroll to features">
+        Scroll
+        <i data-lucide="chevron-down" class="w-4 h-4 scroll-cue"></i>
+      </a>
+    </section>
+
+    <!-- ===================== STATS STRIP ===================== -->
+    <section class="relative border-y hairline bg-ink-800/60" aria-label="Key numbers">
+      <div class="max-w-7xl mx-auto px-5 sm:px-8 grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/5">
+        <div class="py-8 px-4 lg:px-8 reveal">
+          <div class="text-3xl sm:text-4xl font-semibold tracking-tight"><span data-count="0">0</span> <span class="text-faint text-xl">taps</span></div>
+          <div class="text-[13px] text-faint mt-1">Manual input needed per log</div>
+        </div>
+        <div class="py-8 px-4 lg:px-8 reveal" data-delay="1">
+          <div class="text-3xl sm:text-4xl font-semibold tracking-tight">&lt;<span data-count="120">0</span><span class="text-faint text-xl">ms</span></div>
+          <div class="text-[13px] text-faint mt-1">Phase 2 on-device inference target</div>
+        </div>
+        <div class="py-8 px-4 lg:px-8 reveal" data-delay="2">
+          <div class="text-3xl sm:text-4xl font-semibold tracking-tight"><span data-count="94" data-suffix=".7">0</span><span class="text-faint text-xl">%</span></div>
+          <div class="text-[13px] text-faint mt-1">Top-1 food ID accuracy (pilot set)</div>
+        </div>
+        <div class="py-8 px-4 lg:px-8 reveal" data-delay="3">
+          <div class="text-3xl sm:text-4xl font-semibold tracking-tight"><span data-count="3">0</span> <span class="text-faint text-xl">streams</span></div>
+          <div class="text-[13px] text-faint mt-1">Vision, biometrics and context, fused</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FEATURES ===================== -->
+    <section id="features" class="relative py-28 sm:py-36">
+      <div class="max-w-7xl mx-auto px-5 sm:px-8">
+        <div class="max-w-3xl reveal">
+          <p class="text-[13px] font-semibold uppercase tracking-[0.2em] text-neon-cyan">Ambient intelligence</p>
+          <h2 class="mt-4 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tightest leading-[1.05]">
+            One assistant that notices.<br /><span class="text-faint">Nothing to type.</span>
+          </h2>
+          <p class="mt-6 text-lg text-soft max-w-2xl">
+            Most trackers fail because you have to remember to use them. OmniVision reads what the glasses camera sees
+            alongside your wearable data, so logging happens as you live.
+          </p>
+        </div>
+
+        <div class="mt-16 grid md:grid-cols-3 gap-5">
+          <!-- Card 1 -->
+          <article class="feature-card spotlight glass rounded-3xl p-7 reveal">
+            <div class="flex items-center justify-between">
+              <span class="grid place-items-center w-11 h-11 rounded-2xl bg-neon-emerald/10 text-neon-emerald ring-1 ring-neon-emerald/20"><i data-lucide="utensils" class="w-5 h-5"></i></span>
+              <span class="text-[11px] font-mono text-faint">01 / NUTRITION</span>
+            </div>
+            <h3 class="mt-6 text-xl font-semibold tracking-tight">Automatic nutrition tracking</h3>
+            <p class="mt-3 text-[15px] text-soft leading-relaxed">It recognises the dish, estimates the portion from what's on the plate, works out the macros and writes them to Apple Health before you pick up your fork.</p>
+            <div class="mt-7 rounded-2xl bg-black/40 border hairline p-4 font-mono text-[12px]">
+              <div class="flex justify-between text-faint"><span>detected</span><span class="text-neon-emerald">● 98.4%</span></div>
+              <div class="mt-2 text-white">200g Cooked Jasmine Rice</div>
+              <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div class="rounded-lg bg-white/5 py-2"><div class="text-white text-sm">260</div><div class="text-faint text-[10px]">kcal</div></div>
+                <div class="rounded-lg bg-white/5 py-2"><div class="text-white text-sm">53g</div><div class="text-faint text-[10px]">carbs</div></div>
+                <div class="rounded-lg bg-white/5 py-2"><div class="text-white text-sm">5.4g</div><div class="text-faint text-[10px]">protein</div></div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 2 -->
+          <article class="feature-card spotlight glass rounded-3xl p-7 reveal" data-delay="1">
+            <div class="flex items-center justify-between">
+              <span class="grid place-items-center w-11 h-11 rounded-2xl bg-neon-indigo/10 text-neon-indigo ring-1 ring-neon-indigo/20"><i data-lucide="brain-circuit" class="w-5 h-5"></i></span>
+              <span class="text-[11px] font-mono text-faint">02 / FOCUS</span>
+            </div>
+            <h3 class="mt-6 text-xl font-semibold tracking-tight">Productivity &amp; deep work</h3>
+            <p class="mt-3 text-[15px] text-soft leading-relaxed">It can tell when you're studying or building. It times each session, tags the subject from what's on the page or screen, and points out patterns that break your focus.</p>
+            <div class="mt-7 rounded-2xl bg-black/40 border hairline p-4">
+              <div class="flex items-end gap-1.5 h-16" aria-hidden="true">
+                <div class="flex-1 rounded-t bg-neon-indigo/30" style="height:40%"></div>
+                <div class="flex-1 rounded-t bg-neon-indigo/40" style="height:65%"></div>
+                <div class="flex-1 rounded-t bg-neon-indigo/30" style="height:30%"></div>
+                <div class="flex-1 rounded-t bg-neon-indigo/60" style="height:85%"></div>
+                <div class="flex-1 rounded-t bg-neon-indigo/40" style="height:55%"></div>
+                <div class="flex-1 rounded-t bg-gradient-to-t from-neon-indigo to-neon-cyan" style="height:100%"></div>
+                <div class="flex-1 rounded-t bg-neon-indigo/25" style="height:20%"></div>
+              </div>
+              <div class="mt-3 flex justify-between text-[12px] font-mono"><span class="text-faint">this week</span><span class="text-white">18h 42m deep work</span></div>
+            </div>
+          </article>
+
+          <!-- Card 3 -->
+          <article class="feature-card spotlight glass rounded-3xl p-7 reveal" data-delay="2">
+            <div class="flex items-center justify-between">
+              <span class="grid place-items-center w-11 h-11 rounded-2xl bg-neon-rose/10 text-neon-rose ring-1 ring-neon-rose/20"><i data-lucide="heart-pulse" class="w-5 h-5"></i></span>
+              <span class="text-[11px] font-mono text-faint">03 / BIOMETRICS</span>
+            </div>
+            <h3 class="mt-6 text-xl font-semibold tracking-tight">Biometric context fusion</h3>
+            <p class="mt-3 text-[15px] text-soft leading-relaxed">WHOOP and Apple Watch report strain, heart rate and recovery. OmniVision ties those numbers to what you were actually doing, so a heart-rate spike gets a cause.</p>
+            <div class="mt-7 rounded-2xl bg-black/40 border hairline p-4">
+              <svg viewBox="0 0 240 56" class="w-full h-14" aria-hidden="true">
+                <defs><linearGradient id="hrg" x1="0" x2="1"><stop offset="0" stop-color="#FF4D6D" stop-opacity=".2"/><stop offset="1" stop-color="#FF4D6D"/></linearGradient></defs>
+                <polyline fill="none" stroke="url(#hrg)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"
+                  points="0,40 30,40 40,38 50,40 70,40 78,12 84,50 90,34 110,40 140,40 148,8 154,52 160,32 180,40 210,40 218,4 224,54 230,30 240,40" />
+              </svg>
+              <div class="mt-2 flex justify-between text-[12px] font-mono"><span class="text-faint">squats × 5 · detected</span><span class="text-white">Strain +2.1</span></div>
+            </div>
+          </article>
+        </div>
+
+        <!-- How it works -->
+        <div class="mt-24 grid lg:grid-cols-3 gap-10 lg:gap-6">
+          <div class="reveal flex gap-5">
+            <div class="shrink-0 grid place-items-center w-12 h-12 rounded-full border hairline text-neon-cyan"><i data-lucide="eye" class="w-5 h-5"></i></div>
+            <div><h4 class="font-semibold text-lg tracking-tight">See</h4><p class="text-soft text-[15px] mt-1.5 leading-relaxed">The glasses camera takes sparse, low-power keyframes whenever a scene changes. Nothing streams continuously.</p></div>
+          </div>
+          <div class="reveal flex gap-5" data-delay="1">
+            <div class="shrink-0 grid place-items-center w-12 h-12 rounded-full border hairline text-neon-indigo"><i data-lucide="sparkles" class="w-5 h-5"></i></div>
+            <div><h4 class="font-semibold text-lg tracking-tight">Understand</h4><p class="text-soft text-[15px] mt-1.5 leading-relaxed">Vision models label the activity and combine it with your heart rate, strain and schedule to work out what's going on.</p></div>
+          </div>
+          <div class="reveal flex gap-5" data-delay="2">
+            <div class="shrink-0 grid place-items-center w-12 h-12 rounded-full border hairline text-neon-emerald"><i data-lucide="circle-check" class="w-5 h-5"></i></div>
+            <div><h4 class="font-semibold text-lg tracking-tight">Log</h4><p class="text-soft text-[15px] mt-1.5 leading-relaxed">Each event is written as structured data to HealthKit, your calendar or a focus journal, and you can undo it.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== HUD DEMO ===================== -->
+    <section id="hud-demo" class="relative py-28 sm:py-36 bg-ink-800 border-y hairline overflow-hidden">
+      <div class="orb w-[600px] h-[600px] bg-neon-cyan/10 top-20 left-1/2 -translate-x-1/2" aria-hidden="true"></div>
+      <div class="relative max-w-7xl mx-auto px-5 sm:px-8">
+        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
+          <div class="max-w-2xl reveal">
+            <p class="text-[13px] font-semibold uppercase tracking-[0.2em] text-neon-cyan">HUD simulator</p>
+            <h2 class="mt-4 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tightest leading-[1.05]">See through the lens.</h2>
+            <p class="mt-5 text-lg text-soft">A live mock-up of the heads-up overlay. Pick a mode to watch OmniVision recognise the scene and log it.</p>
+          </div>
+
+          <div class="reveal" data-delay="1">
+            <div role="tablist" aria-label="HUD modes" class="glass rounded-full p-1.5 inline-flex gap-1 flex-wrap">
+              <button role="tab" id="tab-nutrition" aria-controls="lens" aria-selected="true" data-mode="nutrition" class="hud-tab border border-transparent rounded-full px-4 sm:px-5 h-10 text-[13px] font-medium text-soft inline-flex items-center gap-2">
+                <i data-lucide="scan-line" class="tab-icon w-4 h-4"></i> Nutrition Scan
+              </button>
+              <button role="tab" id="tab-focus" aria-controls="lens" aria-selected="false" data-mode="focus" class="hud-tab border border-transparent rounded-full px-4 sm:px-5 h-10 text-[13px] font-medium text-soft inline-flex items-center gap-2">
+                <i data-lucide="timer" class="tab-icon w-4 h-4"></i> Deep Work
+              </button>
+              <button role="tab" id="tab-bio" aria-controls="lens" aria-selected="false" data-mode="bio" class="hud-tab border border-transparent rounded-full px-4 sm:px-5 h-10 text-[13px] font-medium text-soft inline-flex items-center gap-2">
+                <i data-lucide="heart-pulse" class="tab-icon w-4 h-4"></i> Biometric Sync
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-12 grid lg:grid-cols-12 gap-5">
+          <!-- LENS -->
+          <div class="lg:col-span-8 reveal">
+            <div id="lens" role="tabpanel" aria-live="polite" class="lens hud-text">
+
+              <!-- ============ Scene: Nutrition ============ -->
+              <div class="hud-scene active" data-scene="nutrition">
+                <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" class="absolute inset-0 w-full h-full" aria-hidden="true">
+                  <defs>
+                    <radialGradient id="tbl" cx="50%" cy="35%" r="85%"><stop offset="0" stop-color="#3b2b20"/><stop offset=".6" stop-color="#1d140e"/><stop offset="1" stop-color="#0a0705"/></radialGradient>
+                    <radialGradient id="plateG" cx="50%" cy="40%" r="65%"><stop offset="0" stop-color="#f6f6f8"/><stop offset=".75" stop-color="#d4d6dc"/><stop offset="1" stop-color="#8f929a"/></radialGradient>
+                    <radialGradient id="riceG" cx="42%" cy="30%" r="70%"><stop offset="0" stop-color="#fffef7"/><stop offset=".7" stop-color="#ece5d0"/><stop offset="1" stop-color="#c9c0a6"/></radialGradient>
+                    <radialGradient id="brocG" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#6fbf4a"/><stop offset="1" stop-color="#1f5a1c"/></radialGradient>
+                    <linearGradient id="salmonG" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#ff9a6b"/><stop offset="1" stop-color="#d9583a"/></linearGradient>
+                    <radialGradient id="glassG" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#9fd8ff" stop-opacity=".18"/><stop offset="1" stop-color="#9fd8ff" stop-opacity=".04"/></radialGradient>
+                    <filter id="soft"><feGaussianBlur stdDeviation="14"/></filter>
+                  </defs>
+                  <rect width="800" height="500" fill="url(#tbl)"/>
+                  <g stroke="#000" stroke-opacity=".25" fill="none" stroke-width="2">
+                    <path d="M0 70 C200 60 400 90 800 60"/><path d="M0 160 C250 150 500 180 800 150"/>
+                    <path d="M0 250 C200 260 500 230 800 250"/><path d="M0 360 C300 350 500 380 800 350"/><path d="M0 450 C250 440 550 470 800 440"/>
+                  </g>
+                  <!-- water glass -->
+                  <ellipse cx="120" cy="120" rx="62" ry="30" fill="#000" opacity=".35" filter="url(#soft)"/>
+                  <ellipse cx="115" cy="105" rx="58" ry="28" fill="url(#glassG)" stroke="#cfe9ff" stroke-opacity=".35" stroke-width="2"/>
+                  <ellipse cx="115" cy="105" rx="44" ry="20" fill="none" stroke="#cfe9ff" stroke-opacity=".18"/>
+                  <!-- plate -->
+                  <ellipse cx="410" cy="318" rx="258" ry="136" fill="#000" opacity=".45" filter="url(#soft)"/>
+                  <ellipse cx="400" cy="290" rx="248" ry="132" fill="url(#plateG)"/>
+                  <ellipse cx="400" cy="292" rx="196" ry="100" fill="none" stroke="#a9adb6" stroke-width="2" opacity=".55"/>
+                  <!-- rice -->
+                  <ellipse cx="362" cy="286" rx="112" ry="62" fill="#000" opacity=".12" filter="url(#soft)"/>
+                  <ellipse cx="358" cy="270" rx="110" ry="60" fill="url(#riceG)"/>
+                  <g id="rice-grains"></g>
+                  <!-- salmon -->
+                  <path d="M470 222 C510 200 575 210 590 238 C600 262 560 280 515 276 C485 272 458 248 470 222 Z" fill="url(#salmonG)"/>
+                  <g stroke="#fff" stroke-opacity=".45" stroke-width="3" fill="none"><path d="M492 222 C505 240 510 258 505 272"/><path d="M522 214 C536 234 540 256 535 276"/><path d="M552 216 C564 234 568 254 562 272"/></g>
+                  <!-- broccoli -->
+                  <g>
+                    <rect x="492" y="318" width="14" height="30" rx="5" fill="#8fbf5a"/>
+                    <circle cx="486" cy="312" r="20" fill="url(#brocG)"/><circle cx="510" cy="306" r="22" fill="url(#brocG)"/>
+                    <circle cx="530" cy="320" r="18" fill="url(#brocG)"/><circle cx="500" cy="326" r="16" fill="url(#brocG)"/>
+                    <rect x="556" y="330" width="12" height="24" rx="5" fill="#8fbf5a"/>
+                    <circle cx="552" cy="326" r="16" fill="url(#brocG)"/><circle cx="572" cy="322" r="15" fill="url(#brocG)"/>
+                  </g>
+                  <!-- chopsticks -->
+                  <g stroke-linecap="round"><line x1="650" y1="110" x2="760" y2="440" stroke="#2a1a10" stroke-width="10"/><line x1="680" y1="100" x2="780" y2="430" stroke="#3a2416" stroke-width="10"/></g>
+                </svg>
+
+                <div class="scanline"></div>
+
+                <!-- bounding boxes (percent of 800x500) -->
+                <div class="bbox" id="bbox-rice" style="left:31%;top:41%;width:28%;height:26%">
+                  <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+                  <span class="bbox-label hud-mono">JASMINE RICE · 98.4%</span>
+                </div>
+                <div class="bbox emerald hidden sm:block" id="bbox-salmon" style="left:57.5%;top:40%;width:17%;height:17%">
+                  <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+                  <span class="bbox-label hud-mono">SALMON · 120g</span>
+                </div>
+
+                <!-- Macro card -->
+                <div class="toast absolute left-[3%] top-[12%] z-20 hud-panel rounded-xl p-3.5 w-[27%] hidden sm:block" id="macro-card">
+                  <div class="flex items-center justify-between hud-mono text-neon-cyan text-[0.85em]"><span>MACRO ESTIMATE</span><span class="text-white/50">v1.4</span></div>
+                  <div class="mt-1 sm:mt-2 font-semibold text-white text-[1.15em] leading-tight">200g Jasmine Rice</div>
+                  <div class="text-white/60 hud-mono text-[0.85em]">cooked · volumetric est.</div>
+                  <div class="mt-2 sm:mt-3 flex items-baseline gap-1"><span class="text-[2em] font-semibold text-white leading-none" id="kcal">0</span><span class="text-white/60">kcal</span></div>
+                  <div class="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2">
+                    <div><div class="flex justify-between hud-mono text-white/80"><span>Carbs</span><span><span id="m-carb">0</span>g</span></div><div class="macro-bar mt-1"><i style="background:linear-gradient(90deg,#00F2FE,#4FACFE)" data-w="78"></i></div></div>
+                    <div class="hidden sm:block"><div class="flex justify-between hud-mono text-white/80"><span>Protein</span><span>5.4g</span></div><div class="macro-bar mt-1"><i style="background:#00F5A0" data-w="18"></i></div></div>
+                    <div class="hidden sm:block"><div class="flex justify-between hud-mono text-white/80"><span>Fat</span><span>0.6g</span></div><div class="macro-bar mt-1"><i style="background:#FFB547" data-w="6"></i></div></div>
+                  </div>
+                </div>
+
+                <!-- Compact macro strip (phones) -->
+                <div class="toast sm:hidden absolute left-[4%] right-[4%] bottom-[6%] z-20 hud-panel rounded-lg px-2 py-1.5 hud-mono text-white text-center whitespace-nowrap" id="macro-strip">
+                  200g Jasmine Rice <span class="text-neon-cyan">|</span> 260 kcal <span class="text-neon-cyan">|</span> 53g Carbs
+                </div>
+
+                <!-- Logged toast -->
+                <div class="toast absolute left-1/2 -translate-x-1/2 bottom-[6%] z-20 hidden sm:flex items-center gap-2 rounded-full px-3.5 py-1.5 bg-neon-emerald/15 border border-neon-emerald/40 text-neon-emerald hud-mono" id="logged-toast" style="transform:translateX(-50%)">
+                  <i data-lucide="circle-check" class="w-4 h-4"></i> Logged to Apple Health · Lunch
+                </div>
+              </div>
+
+              <!-- ============ Scene: Focus ============ -->
+              <div class="hud-scene" data-scene="focus">
+                <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" class="absolute inset-0 w-full h-full" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="wall" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0f1320"/><stop offset="1" stop-color="#1a1e2c"/></linearGradient>
+                    <linearGradient id="desk" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2b2420"/><stop offset="1" stop-color="#120e0b"/></linearGradient>
+                    <radialGradient id="lamp" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".35"/><stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient>
+                    <linearGradient id="screen" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#0b1422"/><stop offset="1" stop-color="#101a2c"/></linearGradient>
+                  </defs>
+                  <rect width="800" height="500" fill="url(#wall)"/>
+                  <circle cx="120" cy="120" r="260" fill="url(#lamp)"/>
+                  <rect y="340" width="800" height="160" fill="url(#desk)"/>
+                  <rect y="338" width="800" height="3" fill="#000" opacity=".4"/>
+                  <!-- laptop -->
+                  <rect x="246" y="116" width="308" height="206" rx="12" fill="#1f2230" stroke="#3a3e50" stroke-width="2"/>
+                  <rect x="258" y="128" width="284" height="182" rx="4" fill="url(#screen)"/>
+                  <g font-family="monospace" font-size="10">
+                    <rect x="270" y="142" width="120" height="8" rx="2" fill="#4FACFE" opacity=".8"/>
+                    <rect x="270" y="160" width="220" height="5" rx="2" fill="#fff" opacity=".35"/>
+                    <rect x="270" y="172" width="190" height="5" rx="2" fill="#fff" opacity=".3"/>
+                    <rect x="270" y="184" width="205" height="5" rx="2" fill="#fff" opacity=".3"/>
+                    <text x="285" y="222" fill="#00F2FE" opacity=".9" font-size="16">A·v = λ·v</text>
+                    <text x="285" y="248" fill="#fff" opacity=".6" font-size="12">det(A − λI) = 0</text>
+                    <rect x="270" y="266" width="170" height="5" rx="2" fill="#fff" opacity=".25"/>
+                    <rect x="270" y="278" width="200" height="5" rx="2" fill="#fff" opacity=".25"/>
+                    <rect x="430" y="200" width="96" height="60" rx="4" fill="none" stroke="#00F5A0" stroke-opacity=".6"/>
+                    <path d="M438 250 L458 232 L474 240 L494 214 L518 208" stroke="#00F5A0" stroke-width="2" fill="none"/>
+                  </g>
+                  <path d="M214 340 L586 340 L566 322 L234 322 Z" fill="#2a2d3a"/>
+                  <rect x="360" y="330" width="80" height="4" rx="2" fill="#15161f"/>
+                  <!-- notebook -->
+                  <g transform="rotate(-8 140 410)">
+                    <rect x="60" y="370" width="170" height="110" rx="6" fill="#e9e5da"/>
+                    <line x1="145" y1="372" x2="145" y2="478" stroke="#bdb6a4" stroke-width="2"/>
+                    <g stroke="#9aa6c7" stroke-width="1.5" opacity=".7"><line x1="72" y1="392" x2="136" y2="392"/><line x1="72" y1="404" x2="130" y2="404"/><line x1="72" y1="416" x2="134" y2="416"/><line x1="154" y1="392" x2="218" y2="392"/><line x1="154" y1="404" x2="210" y2="404"/></g>
+                  </g>
+                  <!-- phone face down -->
+                  <rect x="620" y="372" width="54" height="96" rx="10" fill="#0a0a0d" stroke="#2a2a33" stroke-width="2" transform="rotate(12 647 420)"/>
+                  <!-- mug -->
+                  <rect x="700" y="300" width="56" height="64" rx="8" fill="#d8d9df"/>
+                  <path d="M756 314 q22 0 22 18 q0 18 -22 18" fill="none" stroke="#d8d9df" stroke-width="7"/>
+                  <ellipse cx="728" cy="302" rx="28" ry="6" fill="#3b2412"/>
+                </svg>
+
+                <div class="bbox show" style="left:30.5%;top:22.5%;width:39.5%;height:42.5%">
+                  <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+                  <span class="bbox-label hud-mono">CONTEXT · LECTURE NOTES (PDF)</span>
+                </div>
+
+                <!-- Timer -->
+                <div class="absolute right-[3%] top-[6%] z-20 hud-panel rounded-2xl px-4 sm:px-5 py-2 sm:py-2.5 text-center">
+                  <div class="hud-mono text-neon-cyan text-[0.8em] tracking-[0.2em] flex items-center justify-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-neon-emerald blink"></span>DEEP WORK</div>
+                  <div class="hud-mono text-white font-semibold text-[2em] leading-none mt-1 tabular-nums" id="focus-timer">00:42:17</div>
+                </div>
+
+                <!-- Context card -->
+                <div class="absolute left-[3%] bottom-[5%] z-20 hud-panel rounded-xl p-2.5 sm:p-3.5 w-[52%] sm:w-[34%]">
+                  <div class="hud-mono text-neon-cyan text-[0.85em]">ACTIVE MODULE</div>
+                  <div class="text-white font-semibold text-[1.1em] mt-1 leading-tight">MATH 221 · Linear Algebra</div>
+                  <div class="text-white/60 text-[0.9em]">Eigenvalues &amp; Eigenvectors · §5.2</div>
+                  <div class="mt-2 sm:mt-3 flex justify-between hud-mono text-white/80"><span>Focus score</span><span id="focus-score">92</span></div>
+                  <div class="macro-bar mt-1"><i id="focus-bar" style="width:92%;background:linear-gradient(90deg,#4FACFE,#00F5A0)"></i></div>
+                  <div class="hidden sm:flex mt-3 gap-1.5 flex-wrap hud-mono text-[0.8em]">
+                    <span class="px-2 py-0.5 rounded bg-white/10 text-white/80">Pomodoro 3/4</span>
+                    <span class="px-2 py-0.5 rounded bg-white/10 text-white/80">Pages 12</span>
+                  </div>
+                </div>
+
+                <!-- Distraction warning -->
+                <div class="toast absolute right-[3%] top-[34%] sm:top-[30%] z-20 rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3 w-[42%] sm:w-[30%] border border-neon-amber/50 bg-[rgba(40,24,0,.6)] backdrop-blur" id="distraction">
+                  <div class="flex items-center gap-2 text-neon-amber hud-mono text-[0.85em]"><i data-lucide="triangle-alert" class="w-4 h-4 shrink-0"></i> DISTRACTION</div>
+                  <div class="text-white text-[1em] mt-1 leading-snug" id="distraction-text">Phone pickup detected · 3rd this hour</div>
+                  <div class="text-white/60 text-[0.85em] mt-0.5 hidden sm:block">Timer paused. Look back at the notes to resume.</div>
+                </div>
+              </div>
+
+              <!-- ============ Scene: Biometric ============ -->
+              <div class="hud-scene" data-scene="bio">
+                <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" class="absolute inset-0 w-full h-full" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0b1030"/><stop offset=".55" stop-color="#5a2d5c"/><stop offset=".78" stop-color="#e4815b"/><stop offset="1" stop-color="#ffc58a"/></linearGradient>
+                    <linearGradient id="ground" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1a1420"/><stop offset="1" stop-color="#050408"/></linearGradient>
+                    <linearGradient id="road" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2a2530"/><stop offset="1" stop-color="#0f0d12"/></linearGradient>
+                    <radialGradient id="sun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff1c9"/><stop offset=".4" stop-color="#ffb070" stop-opacity=".9"/><stop offset="1" stop-color="#ff7a59" stop-opacity="0"/></radialGradient>
+                  </defs>
+                  <rect width="800" height="260" fill="url(#sky)"/>
+                  <circle cx="400" cy="250" r="120" fill="url(#sun)"/>
+                  <path d="M0 250 L90 210 L160 232 L250 196 L340 240 L420 214 L520 236 L610 200 L700 230 L800 212 L800 260 L0 260 Z" fill="#2a1a33" opacity=".85"/>
+                  <rect y="258" width="800" height="242" fill="url(#ground)"/>
+                  <path d="M384 258 L416 258 L720 500 L80 500 Z" fill="url(#road)"/>
+                  <path d="M400 262 L400 500" stroke="#ffd48a" stroke-width="5" stroke-dasharray="26 54" class="road-dash" opacity=".85"/>
+                  <path d="M390 258 L120 500" stroke="#fff" stroke-opacity=".25" stroke-width="2"/>
+                  <path d="M410 258 L680 500" stroke="#fff" stroke-opacity=".25" stroke-width="2"/>
+                  <g fill="#0c0a10">
+                    <path d="M120 300 l24 -70 l24 70 z"/><path d="M60 330 l30 -90 l30 90 z"/><path d="M660 300 l24 -70 l24 70 z"/><path d="M720 340 l32 -96 l32 96 z"/>
+                  </g>
+                </svg>
+
+                <!-- HR panel -->
+                <div class="absolute left-[3%] top-[6%] z-20 hud-panel rounded-xl p-2.5 sm:p-3.5 w-[40%] sm:w-[30%]" style="border-color:rgba(255,77,109,.4);box-shadow:0 0 24px -6px rgba(255,77,109,.4)">
+                  <div class="flex items-center justify-between hud-mono text-[0.85em]"><span class="text-neon-rose flex items-center gap-1.5"><i data-lucide="heart" class="w-3.5 h-3.5 fill-current"></i>HEART RATE</span><span class="text-white/50 hidden sm:inline">Watch Ultra</span></div>
+                  <div class="flex items-baseline gap-1 mt-1"><span class="text-[2.4em] font-semibold text-white leading-none tabular-nums" id="hr">152</span><span class="text-white/60">bpm</span></div>
+                  <div class="mt-2 flex gap-0.5" aria-label="Heart rate zones">
+                    <span class="flex-1 h-1.5 rounded-sm bg-white/15"></span><span class="flex-1 h-1.5 rounded-sm bg-white/15"></span><span class="flex-1 h-1.5 rounded-sm bg-white/15"></span>
+                    <span class="flex-1 h-1.5 rounded-sm bg-neon-amber shadow-[0_0_8px_#FFB547]"></span><span class="flex-1 h-1.5 rounded-sm bg-white/15"></span>
+                  </div>
+                  <div class="hud-mono text-white/70 mt-1 text-[0.85em]">Zone 4 · Threshold</div>
+                </div>
+
+                <!-- Strain ring -->
+                <div class="absolute right-[3%] top-[6%] z-20 hud-panel rounded-xl p-2.5 sm:p-3.5 w-[34%] sm:w-[25%] flex flex-col items-center">
+                  <div class="hud-mono text-neon-cyan text-[0.85em] self-start">WHOOP STRAIN</div>
+                  <div class="relative w-[70%] aspect-square mt-1">
+                    <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
+                      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8"/>
+                      <circle id="strain-ring" cx="50" cy="50" r="42" fill="none" stroke="url(#strainGrad)" stroke-width="8" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="263.9" style="transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)"/>
+                      <defs><linearGradient id="strainGrad" x1="0" x2="1"><stop offset="0" stop-color="#00F2FE"/><stop offset="1" stop-color="#4FACFE"/></linearGradient></defs>
+                    </svg>
+                    <div class="absolute inset-0 grid place-items-center text-center">
+                      <div><div class="text-white font-semibold text-[1.6em] leading-none tabular-nums" id="strain">14.2</div><div class="text-white/50 hud-mono text-[0.75em]">/ 21</div></div>
+                    </div>
+                  </div>
+                  <div class="hud-mono text-[0.8em] text-white/70 mt-1 flex gap-2"><span>REC <span class="text-neon-emerald">68%</span></span><span class="hidden sm:inline">HRV 71</span></div>
+                </div>
+
+                <!-- Activity bbox -->
+                <div class="bbox show emerald" style="left:37%;top:48%;width:26%;height:18%">
+                  <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+                  <span class="bbox-label hud-mono">ACTIVITY · OUTDOOR RUN</span>
+                </div>
+
+                <!-- ECG strip -->
+                <div class="absolute left-[3%] right-[3%] bottom-[5%] z-20 hud-panel rounded-xl px-3 py-2">
+                  <div class="flex items-center justify-between hud-mono text-[0.8em] text-white/70">
+                    <span>ECG · LIVE</span>
+                    <span class="hidden sm:inline">Pace <span class="text-white">5:12</span>/km · Cadence <span class="text-white">172</span> spm</span>
+                    <span class="text-neon-emerald">● SYNCED</span>
+                  </div>
+                  <canvas id="ecg" class="w-full h-[34px] sm:h-[46px] mt-1 block"></canvas>
+                </div>
+              </div>
+
+              <!-- ============ Persistent HUD chrome ============ -->
+              <div class="hud-corner" style="top:14px;left:14px;border-width:2px 0 0 2px;border-top-left-radius:10px" aria-hidden="true"></div>
+              <div class="hud-corner" style="top:14px;right:14px;border-width:2px 2px 0 0;border-top-right-radius:10px" aria-hidden="true"></div>
+              <div class="hud-corner" style="bottom:14px;left:14px;border-width:0 0 2px 2px;border-bottom-left-radius:10px" aria-hidden="true"></div>
+              <div class="hud-corner" style="bottom:14px;right:14px;border-width:0 2px 2px 0;border-bottom-right-radius:10px" aria-hidden="true"></div>
+              <div class="reticle hidden sm:block" aria-hidden="true"></div>
+              <div class="absolute left-1/2 top-[1.5%] -translate-x-1/2 z-20 hidden md:flex items-center gap-3 hud-mono text-white/55 text-[0.8em]" style="transform:translateX(-50%)" id="hud-status" aria-hidden="true">
+              </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-[12px] text-faint">
+              <span class="inline-flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-neon-rose blink"></span> Simulated feed · procedural scene, no camera access</span>
+              <button id="replay" type="button" class="inline-flex items-center gap-1.5 text-soft hover:text-white transition"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Replay scan</button>
+            </div>
+          </div>
+
+          <!-- SIDE PANEL -->
+          <aside class="lg:col-span-4 flex flex-col gap-5 reveal" data-delay="1">
+            <div class="glass rounded-3xl p-6">
+              <div class="flex items-center gap-3">
+                <span id="panel-icon-wrap" class="grid place-items-center w-10 h-10 rounded-xl bg-neon-cyan/10 text-neon-cyan"><i id="panel-icon" data-lucide="scan-line" class="w-5 h-5"></i></span>
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.18em] text-faint" id="panel-kicker">Mode 01</div>
+                  <h3 class="font-semibold tracking-tight text-lg" id="panel-title">Nutrition Scan</h3>
+                </div>
+              </div>
+              <p class="mt-4 text-[14px] text-soft leading-relaxed" id="panel-desc"></p>
+              <dl class="mt-5 grid grid-cols-2 gap-2.5" id="panel-stats"></dl>
+            </div>
+
+            <div class="glass rounded-3xl p-6 flex-1 min-h-[220px]">
+              <div class="flex items-center justify-between">
+                <h3 class="font-semibold tracking-tight">Auto-log feed</h3>
+                <span class="inline-flex items-center gap-1.5 text-[11px] text-neon-emerald"><span class="pulse-dot w-1.5 h-1.5 rounded-full bg-neon-emerald text-neon-emerald"></span>Live</span>
+              </div>
+              <ul id="feed" class="mt-4 space-y-2.5" aria-live="polite"></ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TECH STACK / ROADMAP ===================== -->
+    <section id="tech-stack" class="relative py-28 sm:py-36">
+      <div class="max-w-7xl mx-auto px-5 sm:px-8">
+        <div class="max-w-3xl reveal">
+          <p class="text-[13px] font-semibold uppercase tracking-[0.2em] text-neon-cyan">Architecture &amp; roadmap</p>
+          <h2 class="mt-4 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tightest leading-[1.05]">
+            Ship on cloud LLMs.<br /><span class="text-gradient">Then move to the edge.</span>
+          </h2>
+          <p class="mt-6 text-lg text-soft">
+            We launch on frontier multimodal models to get accuracy from the first day. Every confirmed log then becomes labelled training data,
+            which we distil into compact models that run on the glasses and phone.
+          </p>
+        </div>
+
+        <!-- Phase toggles -->
+        <div class="mt-14 grid md:grid-cols-2 gap-4 reveal" role="group" aria-label="Roadmap phase">
+          <button type="button" class="phase-btn text-left glass rounded-3xl p-6 border" data-phase="1" aria-pressed="true">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-mono tracking-[0.18em] text-neon-cyan">PHASE 01 · NOW → 2027</span>
+              <i data-lucide="cloud" class="w-5 h-5 text-neon-cyan"></i>
+            </div>
+            <div class="mt-3 text-2xl font-semibold tracking-tight">Multimodal Vision LLMs</div>
+            <p class="mt-2 text-[14px] text-soft">Frontier cloud models handle perception and reasoning. This gets the product to market fast, with high accuracy on a wide range of scenes.</p>
+          </button>
+          <button type="button" class="phase-btn text-left glass rounded-3xl p-6 border" data-phase="2" aria-pressed="false">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-mono tracking-[0.18em] text-neon-emerald">PHASE 02 · 2027 →</span>
+              <i data-lucide="cpu" class="w-5 h-5 text-neon-emerald"></i>
+            </div>
+            <div class="mt-3 text-2xl font-semibold tracking-tight">Proprietary On-Device Deep Learning</div>
+            <p class="mt-2 text-[14px] text-soft">Distilled, quantised vision models trained on our own activity dataset. They run on the device, in real time and offline.</p>
+          </button>
+        </div>
+
+        <!-- Pipeline diagram -->
+        <div class="mt-6 glass rounded-3xl p-6 sm:p-8 reveal overflow-hidden relative">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="font-semibold tracking-tight text-lg" id="pipe-title">Inference pipeline · Phase 1</h3>
+            <span class="text-[12px] font-mono text-faint" id="pipe-sub">keyframe → cloud → structured event</span>
+          </div>
+          <div id="pipeline" class="mt-8 flex flex-col md:flex-row items-stretch md:items-center"></div>
+        </div>
+
+        <div class="mt-6 grid lg:grid-cols-5 gap-6">
+          <!-- Metric comparison -->
+          <div class="lg:col-span-3 glass rounded-3xl p-6 sm:p-8 reveal">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold tracking-tight text-lg">Phase comparison</h3>
+              <div class="flex items-center gap-4 text-[12px] text-faint">
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-neon-cyan"></span>Phase 1</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-neon-emerald"></span>Phase 2</span>
+              </div>
+            </div>
+            <div id="metrics" class="mt-6 space-y-6"></div>
+          </div>
+
+          <!-- Data flywheel -->
+          <div class="lg:col-span-2 glass rounded-3xl p-6 sm:p-8 reveal" data-delay="1">
+            <h3 class="font-semibold tracking-tight text-lg">The data flywheel</h3>
+            <p class="text-[14px] text-soft mt-2">How Phase 1 produces the training data for Phase 2.</p>
+            <ol class="mt-6 space-y-5">
+              <li class="flex gap-4">
+                <span class="shrink-0 grid place-items-center w-8 h-8 rounded-full bg-neon-cyan/10 text-neon-cyan text-sm font-semibold">1</span>
+                <div><div class="font-medium">LLM auto-labels</div><div class="text-[13px] text-faint mt-0.5">Frontier models label each keyframe: food, portion, activity.</div></div>
+              </li>
+              <li class="flex gap-4">
+                <span class="shrink-0 grid place-items-center w-8 h-8 rounded-full bg-neon-indigo/10 text-neon-indigo text-sm font-semibold">2</span>
+                <div><div class="font-medium">User-verified ground truth</div><div class="text-[13px] text-faint mt-0.5">A single swipe to confirm or correct gives a verified label. Users opt in, and the data is de-identified.</div></div>
+              </li>
+              <li class="flex gap-4">
+                <span class="shrink-0 grid place-items-center w-8 h-8 rounded-full bg-neon-emerald/10 text-neon-emerald text-sm font-semibold">3</span>
+                <div><div class="font-medium">Distil &amp; quantise</div><div class="text-[13px] text-faint mt-0.5">A teacher model trains a compact student ViT, quantised to INT8 for Core ML and TFLite.</div></div>
+              </li>
+              <li class="flex gap-4">
+                <span class="shrink-0 grid place-items-center w-8 h-8 rounded-full bg-white/10 text-white text-sm font-semibold">4</span>
+                <div><div class="font-medium">Federated refinement</div><div class="text-[13px] text-faint mt-0.5">Models keep improving on-device. Raw frames stay on the device.</div></div>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PITCH ===================== -->
+    <section id="pitch" class="relative py-28 sm:py-36 bg-ink-800 border-t hairline overflow-hidden">
+      <div class="orb w-[520px] h-[520px] bg-neon-indigo/15 -bottom-40 -left-20" aria-hidden="true"></div>
+      <div class="orb w-[420px] h-[420px] bg-neon-emerald/10 -top-20 right-0" aria-hidden="true"></div>
+      <div class="relative max-w-7xl mx-auto px-5 sm:px-8">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <div class="reveal">
+            <p class="text-[13px] font-semibold uppercase tracking-[0.2em] text-neon-cyan">For investors &amp; reviewers</p>
+            <h2 class="mt-4 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tightest leading-[1.05]">The opportunity, <span class="text-faint">at a glance.</span></h2>
+            <p class="mt-6 text-lg text-soft max-w-xl">
+              Smart glasses are becoming everyday computers, but they still lack a reason to wear them all day.
+              OmniVision is that reason: ambient logging for health and productivity with no manual input.
+            </p>
+            <div class="mt-9 flex flex-wrap gap-3">
+              <button type="button" data-open-pitch class="btn btn-primary h-12 px-6 text-[15px]">
+                View Pitch Summary <i data-lucide="arrow-up-right" class="arrow w-4 h-4"></i>
+              </button>
+              <a href="#hud-demo" class="btn btn-ghost h-12 px-6 text-[15px]"><i data-lucide="play" class="w-4 h-4"></i> Replay demo</a>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="glass ring-gradient rounded-3xl p-6 reveal">
+              <i data-lucide="target" class="w-5 h-5 text-neon-cyan"></i>
+              <div class="mt-4 text-3xl font-semibold tracking-tight">$42B</div>
+              <div class="text-[13px] text-faint mt-1">Digital health &amp; fitness tracking TAM*</div>
+            </div>
+            <div class="glass rounded-3xl p-6 reveal" data-delay="1">
+              <i data-lucide="glasses" class="w-5 h-5 text-neon-indigo"></i>
+              <div class="mt-4 text-3xl font-semibold tracking-tight">10M+</div>
+              <div class="text-[13px] text-faint mt-1">Smart glasses shipped / yr by 2027*</div>
+            </div>
+            <div class="glass rounded-3xl p-6 reveal" data-delay="2">
+              <i data-lucide="wallet" class="w-5 h-5 text-neon-emerald"></i>
+              <div class="mt-4 text-3xl font-semibold tracking-tight">$14.99</div>
+              <div class="text-[13px] text-faint mt-1">Pro subscription / month</div>
+            </div>
+            <div class="glass ring-gradient rounded-3xl p-6 reveal" data-delay="3">
+              <i data-lucide="shield-check" class="w-5 h-5 text-neon-cyan"></i>
+              <div class="mt-4 text-3xl font-semibold tracking-tight">Edge-first</div>
+              <div class="text-[13px] text-faint mt-1">Privacy moat by Phase 2</div>
+            </div>
+            <p class="col-span-2 text-[11px] text-faint">*Illustrative estimates for academic presentation. Not investment advice.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="border-t hairline">
+    <div class="max-w-7xl mx-auto px-5 sm:px-8 py-12 flex flex-col md:flex-row gap-8 md:items-center md:justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="grid place-items-center w-7 h-7 rounded-[9px] bg-gradient-to-br from-neon-cyan via-neon-indigo to-neon-emerald"><i data-lucide="scan-eye" class="w-4 h-4 text-black" stroke-width="2.4"></i></span>
+        <span class="text-sm font-semibold">OmniVision AI</span>
+        <span class="text-[12px] text-faint ml-2">© <span id="year">2026</span> · Concept project</span>
+      </div>
+      <nav class="flex flex-wrap gap-6 text-[13px] text-soft" aria-label="Footer">
+        <a href="#features" class="hover:text-white transition">Features</a>
+        <a href="#hud-demo" class="hover:text-white transition">HUD Demo</a>
+        <a href="#tech-stack" class="hover:text-white transition">Tech Stack</a>
+        <a href="#pitch" class="hover:text-white transition">Pitch</a>
+      </nav>
+      <p class="text-[11px] text-faint max-w-xs">Third-party product names are used only to describe compatibility. OmniVision AI is not affiliated with Meta, Apple or WHOOP.</p>
+    </div>
+  </footer>
+
+  <!-- ===================== PITCH MODAL ===================== -->
+  <div id="pitch-modal" class="hidden-modal fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="pitch-title">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-md" data-close-pitch></div>
+    <div class="modal-sheet relative w-full max-w-5xl max-h-[92vh] sm:max-h-[88vh] glass-strong rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col">
+      <div class="flex items-start justify-between gap-4 p-6 sm:p-8 border-b hairline">
+        <div>
+          <div class="text-[11px] font-mono tracking-[0.18em] text-neon-cyan">EXECUTIVE SUMMARY · SEED STAGE · 2026</div>
+          <h2 id="pitch-title" class="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight">OmniVision AI: <span class="text-gradient">ambient life logging</span></h2>
+          <p class="mt-2 text-[14px] text-soft max-w-2xl">A zero-input assistant for smart glasses. It fuses egocentric vision with wearable biometrics to log nutrition, focus and physical effort automatically.</p>
+        </div>
+        <button type="button" class="shrink-0 grid place-items-center w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border hairline transition" data-close-pitch aria-label="Close pitch summary">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="modal-scroll overflow-y-auto p-6 sm:p-8">
+        <div class="grid md:grid-cols-2 gap-4">
+          <article class="rounded-2xl bg-white/[0.03] border hairline p-6">
+            <div class="flex items-center gap-3"><span class="grid place-items-center w-9 h-9 rounded-xl bg-neon-cyan/10 text-neon-cyan"><i data-lucide="users" class="w-4 h-4"></i></span><h3 class="font-semibold text-lg">Target Market</h3></div>
+            <ul class="mt-4 space-y-2.5 text-[14px] text-soft">
+              <li class="flex gap-2"><i data-lucide="chevron-right" class="w-4 h-4 mt-0.5 text-neon-cyan shrink-0"></i><span><b class="text-white font-medium">Beachhead:</b> quantified-self users who already own a WHOOP or Apple Watch (18–40).</span></li>
+              <li class="flex gap-2"><i data-lucide="chevron-right" class="w-4 h-4 mt-0.5 text-neon-cyan shrink-0"></i><span><b class="text-white font-medium">Expansion:</b> university students, knowledge workers and athletes who care about performance.</span></li>
+              <li class="flex gap-2"><i data-lucide="chevron-right" class="w-4 h-4 mt-0.5 text-neon-cyan shrink-0"></i><span><b class="text-white font-medium">B2B2C:</b> dietitians, coaches, corporate wellness and clinical nutrition studies.</span></li>
+            </ul>
+          </article>
+
+          <article class="rounded-2xl bg-white/[0.03] border hairline p-6">
+            <div class="flex items-center gap-3"><span class="grid place-items-center w-9 h-9 rounded-xl bg-neon-emerald/10 text-neon-emerald"><i data-lucide="wallet" class="w-4 h-4"></i></span><h3 class="font-semibold text-lg">Revenue Model</h3></div>
+            <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+              <div class="rounded-xl bg-black/40 border hairline p-3"><div class="text-[11px] text-faint">Free</div><div class="font-semibold mt-1">$0</div><div class="text-[11px] text-faint mt-1">20 logs / day</div></div>
+              <div class="rounded-xl bg-neon-emerald/10 border border-neon-emerald/30 p-3"><div class="text-[11px] text-neon-emerald">Pro</div><div class="font-semibold mt-1">$14.99</div><div class="text-[11px] text-faint mt-1">per month</div></div>
+              <div class="rounded-xl bg-black/40 border hairline p-3"><div class="text-[11px] text-faint">Teams</div><div class="font-semibold mt-1">$8</div><div class="text-[11px] text-faint mt-1">seat / month</div></div>
+            </div>
+            <p class="mt-4 text-[14px] text-soft">Subscriptions come first. Then a B2B dashboard for coaches and clinicians, and hardware bundle revenue share with glasses OEMs.</p>
+          </article>
+
+          <article class="rounded-2xl bg-white/[0.03] border hairline p-6">
+            <div class="flex items-center gap-3"><span class="grid place-items-center w-9 h-9 rounded-xl bg-neon-indigo/10 text-neon-indigo"><i data-lucide="layers" class="w-4 h-4"></i></span><h3 class="font-semibold text-lg">Tech Stack</h3></div>
+            <div class="mt-4 space-y-3 text-[13px]">
+              <div>
+                <div class="text-faint text-[11px] font-mono tracking-wider">PHASE 1</div>
+                <div class="mt-1.5 flex flex-wrap gap-1.5">
+                  <span class="px-2.5 py-1 rounded-full bg-white/5 border hairline">Multimodal LLM APIs</span>
+                  <span class="px-2.5 py-1 rounded-full bg-white/5 border hairline">Swift / Kotlin companion</span>
+                  <span class="px-2.5 py-1 rounded-full bg-white/5 border hairline">HealthKit</span>
+                  <span class="px-2.5 py-1 rounded-full bg-white/5 border hairline">WHOOP API</span>
+                  <span class="px-2.5 py-1 rounded-full bg-white/5 border hairline">Meta Wearables SDK</span>
+                </div>
+              </div>
+              <div>
+                <div class="text-faint text-[11px] font-mono tracking-wider">PHASE 2</div>
+                <div class="mt-1.5 flex flex-wrap gap-1.5">
+                  <span class="px-2.5 py-1 rounded-full bg-neon-emerald/10 border border-neon-emerald/25 text-neon-emerald">Distilled ViT</span>
+                  <span class="px-2.5 py-1 rounded-full bg-neon-emerald/10 border border-neon-emerald/25 text-neon-emerald">Core ML / TFLite</span>
+                  <span class="px-2.5 py-1 rounded-full bg-neon-emerald/10 border border-neon-emerald/25 text-neon-emerald">INT8 quantisation</span>
+                  <span class="px-2.5 py-1 rounded-full bg-neon-emerald/10 border border-neon-emerald/25 text-neon-emerald">Federated learning</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="rounded-2xl bg-white/[0.03] border hairline p-6">
+            <div class="flex items-center gap-3"><span class="grid place-items-center w-9 h-9 rounded-xl bg-neon-rose/10 text-neon-rose"><i data-lucide="sparkles" class="w-4 h-4"></i></span><h3 class="font-semibold text-lg">Unique Selling Proposition</h3></div>
+            <ul class="mt-4 space-y-2.5 text-[14px] text-soft">
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 text-neon-emerald shrink-0"></i><span><b class="text-white font-medium">Zero input.</b> Other apps need photos, barcodes or typing. OmniVision just watches.</span></li>
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 text-neon-emerald shrink-0"></i><span><b class="text-white font-medium">Cross-modal context.</b> Vision and biometrics together explain why the numbers changed.</span></li>
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 text-neon-emerald shrink-0"></i><span><b class="text-white font-medium">Proprietary dataset.</b> A labelled, first-person activity corpus that competitors can't easily reproduce.</span></li>
+            </ul>
+          </article>
+        </div>
+
+        <!-- Competitive + milestones -->
+        <div class="mt-4 grid md:grid-cols-5 gap-4">
+          <div class="md:col-span-3 rounded-2xl bg-white/[0.03] border hairline p-6 overflow-x-auto">
+            <h3 class="font-semibold">Competitive landscape</h3>
+            <table class="mt-4 w-full text-[13px] min-w-[420px]">
+              <thead class="text-faint text-left">
+                <tr><th class="font-normal pb-2">Product type</th><th class="font-normal pb-2 text-center">Auto-capture</th><th class="font-normal pb-2 text-center">Biometrics</th><th class="font-normal pb-2 text-center">Focus</th></tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                <tr><td class="py-2.5 text-soft">Manual calorie loggers</td><td class="text-center text-faint">—</td><td class="text-center text-faint">Partial</td><td class="text-center text-faint">—</td></tr>
+                <tr><td class="py-2.5 text-soft">Photo-based food AI</td><td class="text-center text-faint">Per photo</td><td class="text-center text-faint">—</td><td class="text-center text-faint">—</td></tr>
+                <tr><td class="py-2.5 text-soft">Screen-time trackers</td><td class="text-center text-faint">Screen only</td><td class="text-center text-faint">—</td><td class="text-center text-faint">✓</td></tr>
+                <tr><td class="py-2.5 font-medium text-white">OmniVision AI</td><td class="text-center text-neon-emerald">✓</td><td class="text-center text-neon-emerald">✓</td><td class="text-center text-neon-emerald">✓</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="md:col-span-2 rounded-2xl bg-white/[0.03] border hairline p-6">
+            <h3 class="font-semibold">Milestones</h3>
+            <ol class="mt-4 relative border-l border-white/10 ml-1.5 space-y-4 text-[13px]">
+              <li class="pl-5 relative"><span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-neon-cyan"></span><div class="text-white font-medium">Q4 2026 · MVP pilot</div><div class="text-faint">200 users, nutrition + focus</div></li>
+              <li class="pl-5 relative"><span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-neon-indigo"></span><div class="text-white font-medium">Q2 2027 · Public beta</div><div class="text-faint">WHOOP + Apple Watch fusion</div></li>
+              <li class="pl-5 relative"><span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-neon-emerald"></span><div class="text-white font-medium">Q4 2027 · Edge model v1</div><div class="text-faint">On-device food + activity ID</div></li>
+              <li class="pl-5 relative"><span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-white/60"></span><div class="text-white font-medium">2028 · OEM partnerships</div><div class="text-faint">Pre-installed on glasses</div></li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="mt-4 rounded-2xl ring-gradient bg-gradient-to-r from-neon-cyan/[0.06] via-transparent to-neon-emerald/[0.06] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="text-[11px] font-mono tracking-[0.18em] text-faint">THE ASK (ILLUSTRATIVE)</div>
+            <div class="mt-1 text-xl font-semibold">$1.5M pre-seed · 18-month runway</div>
+            <div class="text-[13px] text-soft mt-1">Split: 45% ML team &amp; dataset, 30% product, 25% go-to-market.</div>
+          </div>
+          <a href="#tech-stack" data-close-pitch class="btn btn-primary h-11 px-5 text-sm shrink-0">Explore the tech <i data-lucide="arrow-right" class="arrow w-4 h-4"></i></a>
+        </div>
+        <p class="mt-4 text-[11px] text-faint">All figures are illustrative, prepared for an academic and entrepreneurial presentation. This is not financial or investment advice.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SCRIPTS ===================== -->
+  <script>
+  (function () {
+    'use strict';
+
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function $(s, r) { return (r || document).querySelector(s); }
+    function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+    function refreshIcons() { if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons(); }
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+    refreshIcons();
+    $('#year').textContent = new Date().getFullYear();
+
+    /* ---------------- Navbar ---------------- */
+    var navbar = $('#navbar');
+    function onScroll() { navbar.classList.toggle('scrolled', window.scrollY > 12); }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    var menuBtn = $('#menu-btn'), mobileMenu = $('#mobile-menu');
+    function setMenu(open) {
+      mobileMenu.classList.toggle('closed', !open);
+      menuBtn.setAttribute('aria-expanded', String(open));
+      menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    }
+    menuBtn.addEventListener('click', function () { setMenu(mobileMenu.classList.contains('closed')); });
+    $$('#mobile-menu a, #mobile-menu button').forEach(function (el) { el.addEventListener('click', function () { setMenu(false); }); });
+
+    var navLinks = $$('.nav-link');
+    if ('IntersectionObserver' in window) {
+      var secObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            navLinks.forEach(function (l) { l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id); });
+          }
+        });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      ['features', 'hud-demo', 'tech-stack', 'pitch'].forEach(function (id) { var el = document.getElementById(id); if (el) secObs.observe(el); });
+    }
+
+    /* ---------------- Reveal + counters ---------------- */
+    function animateCount(el) {
+      var to = parseFloat(el.getAttribute('data-count')) || 0, suffix = el.getAttribute('data-suffix') || '';
+      if (to === 0 || reduceMotion) { el.textContent = to + suffix; return; }
+      var start = performance.now(), dur = 1400;
+      (function tick(now) {
+        var p = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(to * e) + (p === 1 ? suffix : '');
+        if (p < 1) requestAnimationFrame(tick);
+      })(start);
+    }
+    if ('IntersectionObserver' in window) {
+      var revObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('in');
+          $$('[data-count]', e.target).forEach(animateCount);
+          revObs.unobserve(e.target);
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      $$('.reveal').forEach(function (el) { revObs.observe(el); });
+    } else {
+      $$('.reveal').forEach(function (el) { el.classList.add('in'); });
+      $$('[data-count]').forEach(animateCount);
+    }
+
+    /* Spotlight hover */
+    $$('.spotlight').forEach(function (card) {
+      card.addEventListener('pointermove', function (e) {
+        var r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+        card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+      });
+    });
+
+    /* ---------------- Three.js hero ---------------- */
+    (function initHero() {
+      var container = $('#hero-canvas');
+      if (!container || !window.THREE) return;
+      var THREE = window.THREE, renderer;
+      try {
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      } catch (err) { return; }
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setClearColor(0x000000, 0);
+      container.appendChild(renderer.domElement);
+
+      var scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x000000, 0.06);
+      var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+      camera.position.set(0, 0, 7);
+
+      var root = new THREE.Group(); scene.add(root);
+      var group = new THREE.Group(); root.add(group);
+
+      // Soft round sprite
+      var sc = document.createElement('canvas'); sc.width = sc.height = 64;
+      var g = sc.getContext('2d'), grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(0.25, 'rgba(255,255,255,0.85)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+      var sprite = new THREE.CanvasTexture(sc);
+
+      var cCyan = new THREE.Color(0x00F2FE), cIndigo = new THREE.Color(0x4FACFE), cEmerald = new THREE.Color(0x00F5A0), tmp = new THREE.Color();
+
+      // Fibonacci particle sphere
+      var N = window.innerWidth < 768 ? 900 : 1600, R = 2.1;
+      var pos = new Float32Array(N * 3), base = new Float32Array(N * 3), col = new Float32Array(N * 3);
+      var golden = Math.PI * (3 - Math.sqrt(5));
+      for (var i = 0; i < N; i++) {
+        var y = 1 - (i / (N - 1)) * 2, rr = Math.sqrt(1 - y * y), th = golden * i;
+        var jitter = 1 + (Math.random() - 0.5) * 0.06;
+        var x = Math.cos(th) * rr * R * jitter, z = Math.sin(th) * rr * R * jitter, yy = y * R * jitter;
+        base[i * 3] = pos[i * 3] = x; base[i * 3 + 1] = pos[i * 3 + 1] = yy; base[i * 3 + 2] = pos[i * 3 + 2] = z;
+        var t = (y + 1) / 2;
+        if (t < 0.5) tmp.copy(cEmerald).lerp(cCyan, t * 2); else tmp.copy(cCyan).lerp(cIndigo, (t - 0.5) * 2);
+        col[i * 3] = tmp.r; col[i * 3 + 1] = tmp.g; col[i * 3 + 2] = tmp.b;
+      }
+      var pGeo = new THREE.BufferGeometry();
+      pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      pGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      var pMat = new THREE.PointsMaterial({ size: 0.055, map: sprite, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.95 });
+      var points = new THREE.Points(pGeo, pMat); group.add(points);
+
+      // Neural network links between a subset of nodes
+      var nodes = [], M = 260;
+      for (var k = 0; k < M; k++) { var idx = Math.floor(Math.random() * N); nodes.push(new THREE.Vector3(base[idx * 3], base[idx * 3 + 1], base[idx * 3 + 2])); }
+      var linePos = [];
+      for (var a = 0; a < M; a++) {
+        var links = 0;
+        for (var b = a + 1; b < M && links < 3; b++) {
+          if (nodes[a].distanceTo(nodes[b]) < 0.62) { linePos.push(nodes[a].x, nodes[a].y, nodes[a].z, nodes[b].x, nodes[b].y, nodes[b].z); links++; }
+        }
+      }
+      var lGeo = new THREE.BufferGeometry();
+      lGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePos, 3));
+      var lMat = new THREE.LineBasicMaterial({ color: 0x4FACFE, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false });
+      group.add(new THREE.LineSegments(lGeo, lMat));
+
+      // Inner core
+      var core = new THREE.Mesh(new THREE.IcosahedronGeometry(1.05, 1), new THREE.MeshBasicMaterial({ color: 0x00F2FE, wireframe: true, transparent: true, opacity: 0.14 }));
+      group.add(core);
+      var coreGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: sprite, color: 0x00F2FE, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
+      coreGlow.scale.set(3.2, 3.2, 1); group.add(coreGlow);
+
+      // Orbit rings
+      function ring(radius, color, opacity, rx, ry) {
+        var m = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.005, 8, 240), new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: opacity, blending: THREE.AdditiveBlending }));
+        m.rotation.x = rx; m.rotation.y = ry; root.add(m); return m;
+      }
+      var ring1 = ring(2.75, 0x00F2FE, 0.35, Math.PI / 2.3, 0.2);
+      var ring2 = ring(3.05, 0x00F5A0, 0.18, Math.PI / 1.8, -0.5);
+
+      // Orbiting satellites
+      var sats = [];
+      [[2.75, 0x00F2FE, 0.9], [3.05, 0x00F5A0, -0.6], [2.75, 0x4FACFE, 2.8]].forEach(function (s) {
+        var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: sprite, color: s[1], transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+        sp.scale.set(0.28, 0.28, 1); root.add(sp); sats.push({ sp: sp, r: s[0], phase: s[2], ring: s[0] === 2.75 ? ring1 : ring2 });
+      });
+
+      // Ambient dust
+      var D = 400, dpos = new Float32Array(D * 3);
+      for (var d = 0; d < D; d++) { dpos[d * 3] = (Math.random() - 0.5) * 22; dpos[d * 3 + 1] = (Math.random() - 0.5) * 14; dpos[d * 3 + 2] = (Math.random() - 0.5) * 10 - 2; }
+      var dGeo = new THREE.BufferGeometry(); dGeo.setAttribute('position', new THREE.BufferAttribute(dpos, 3));
+      var dust = new THREE.Points(dGeo, new THREE.PointsMaterial({ size: 0.03, map: sprite, color: 0x8fd8ff, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
+      scene.add(dust);
+
+      // Interaction
+      var mouse = { x: 0, y: 0 }, target = { x: 0, y: 0 }, spin = 0, visible = true;
+      window.addEventListener('pointermove', function (e) {
+        target.x = (e.clientX / window.innerWidth) * 2 - 1;
+        target.y = (e.clientY / window.innerHeight) * 2 - 1;
+      }, { passive: true });
+
+      function resize() {
+        var w = container.clientWidth, h = container.clientHeight;
+        if (!w || !h) return;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h; camera.updateProjectionMatrix();
+        var wide = w >= 1024;
+        root.position.x = wide ? 2.0 : 0;
+        root.position.y = wide ? 0 : (w < 640 ? -0.9 : -0.4);
+        var s = wide ? 1 : (w < 640 ? 0.78 : 0.9);
+        root.scale.set(s, s, s);
+        container.style.opacity = wide ? '1' : '0.55';
+      }
+      if ('ResizeObserver' in window) new ResizeObserver(resize).observe(container); else window.addEventListener('resize', resize);
+      resize();
+
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (en) { visible = en[0].isIntersecting; if (visible) loop(); }).observe(container);
+      }
+
+      var clock = new THREE.Clock(), running = false;
+      function frame() {
+        running = false;
+        if (!visible) return;
+        var t = clock.getElapsedTime();
+        mouse.x += (target.x - mouse.x) * 0.045;
+        mouse.y += (target.y - mouse.y) * 0.045;
+        spin += reduceMotion ? 0.0004 : 0.0022;
+
+        group.rotation.y = spin + mouse.x * 0.7;
+        group.rotation.x = mouse.y * 0.35;
+        root.rotation.z = mouse.x * -0.06;
+
+        // Breathing ripple across the sphere surface
+        if (!reduceMotion) {
+          var arr = pGeo.attributes.position.array;
+          for (var i = 0; i < N; i++) {
+            var bx = base[i * 3], by = base[i * 3 + 1], bz = base[i * 3 + 2];
+            var f = 1 + 0.035 * Math.sin(t * 1.6 + by * 2.4 + bx * 1.3);
+            arr[i * 3] = bx * f; arr[i * 3 + 1] = by * f; arr[i * 3 + 2] = bz * f;
+          }
+          pGeo.attributes.position.needsUpdate = true;
+        }
+        core.rotation.x = t * 0.15; core.rotation.y = -t * 0.2;
+        coreGlow.material.opacity = 0.28 + Math.sin(t * 2) * 0.07;
+        ring1.rotation.z = t * 0.12; ring2.rotation.z = -t * 0.08;
+
+        sats.forEach(function (s, i) {
+          var ang = t * (0.5 + i * 0.12) + s.phase, v = new THREE.Vector3(Math.cos(ang) * s.r, Math.sin(ang) * s.r, 0);
+          v.applyEuler(s.ring.rotation); s.sp.position.copy(v);
+        });
+        dust.rotation.y = t * 0.01;
+
+        camera.position.x = mouse.x * 0.35; camera.position.y = -mouse.y * 0.25;
+        camera.lookAt(root.position.x * 0.35, 0, 0);
+        renderer.render(scene, camera);
+        loop();
+      }
+      function loop() { if (!running) { running = true; requestAnimationFrame(frame); } }
+      loop();
+    })();
+
+    /* ---------------- HUD simulator ---------------- */
+    // Procedural rice grains
+    (function riceGrains() {
+      var gEl = document.getElementById('rice-grains'); if (!gEl) return;
+      var ns = 'http://www.w3.org/2000/svg';
+      for (var i = 0; i < 230; i++) {
+        var ang = Math.random() * Math.PI * 2, rad = Math.sqrt(Math.random());
+        var cx = 358 + Math.cos(ang) * rad * 104, cy = 270 + Math.sin(ang) * rad * 55;
+        var e = document.createElementNS(ns, 'ellipse');
+        e.setAttribute('cx', cx.toFixed(1)); e.setAttribute('cy', cy.toFixed(1));
+        e.setAttribute('rx', (4 + Math.random() * 2).toFixed(1)); e.setAttribute('ry', (1.6 + Math.random() * 0.8).toFixed(1));
+        e.setAttribute('transform', 'rotate(' + Math.round(Math.random() * 180) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')');
+        var shade = 238 + Math.floor(Math.random() * 17);
+        e.setAttribute('fill', 'rgb(' + 255 + ',' + (shade) + ',' + (shade - 12) + ')');
+        e.setAttribute('stroke', 'rgba(120,100,60,.18)'); e.setAttribute('stroke-width', '0.6');
+        gEl.appendChild(e);
+      }
+    })();
+
+    var MODES = {
+      nutrition: {
+        kicker: 'Mode 01', title: 'Nutrition Scan', icon: 'scan-line', tint: 'emerald',
+        desc: 'The camera spots food as soon as your plate enters the frame. Portion size is estimated from plate geometry and depth cues, and macros are written to Apple Health without you touching your phone.',
+        stats: [['Detection', '98.4%'], ['Portion error', '±9g'], ['Latency', '1.6s'], ['Taps', '0']],
+        feed: [
+          ['utensils', 'Jasmine Rice · 200g', '260 kcal · 53g C · 5.4g P', '#00F5A0'],
+          ['fish', 'Grilled Salmon · 120g', '250 kcal · 25g P · 16g F', '#00F5A0'],
+          ['leaf', 'Broccoli · 85g', '29 kcal · 2.4g P', '#00F5A0'],
+          ['glass-water', 'Water · 330ml', 'Hydration goal 64%', '#4FACFE']
+        ]
+      },
+      focus: {
+        kicker: 'Mode 02', title: 'Deep Work / Study', icon: 'timer', tint: 'indigo',
+        desc: 'Open notes, a code editor or a textbook start a focus session. The subject is read from the content. A phone pickup or long glance away pauses the timer and records a distraction.',
+        stats: [['Session', '42m'], ['Focus score', '92'], ['Distractions', '3'], ['Subject', 'MATH 221']],
+        feed: [
+          ['book-open', 'Linear Algebra · §5.2', 'Deep work segment · 25m', '#4FACFE'],
+          ['smartphone', 'Phone pickup', 'Distraction · 14s', '#FFB547'],
+          ['coffee', 'Break detected', '5m · Pomodoro 3/4', '#00F2FE'],
+          ['file-text', 'Notes captured', '12 pages · synced', '#4FACFE']
+        ]
+      },
+      bio: {
+        kicker: 'Mode 03', title: 'Biometric Sync', icon: 'heart-pulse', tint: 'rose',
+        desc: 'WHOOP strain and Apple Watch heart rate are lined up with what the camera sees: a run, a lift, a flight of stairs. Every spike in effort gets labelled with its cause.',
+        stats: [['Heart rate', '152'], ['Strain', '14.2'], ['Recovery', '68%'], ['Zone', 'Z4']],
+        feed: [
+          ['footprints', 'Outdoor Run · 5.2km', 'Pace 5:12/km · auto-detected', '#FF4D6D'],
+          ['activity', 'Strain +2.1', 'WHOOP · interval block', '#00F2FE'],
+          ['heart-pulse', 'Peak HR 171 bpm', 'Apple Watch · Zone 5 · 40s', '#FF4D6D'],
+          ['flame', 'Active energy 412 kcal', 'Written to Apple Health', '#00F5A0']
+        ]
+      }
+    };
+    var TINTS = {
+      emerald: 'grid place-items-center w-10 h-10 rounded-xl bg-neon-emerald/10 text-neon-emerald',
+      indigo: 'grid place-items-center w-10 h-10 rounded-xl bg-neon-indigo/10 text-neon-indigo',
+      rose: 'grid place-items-center w-10 h-10 rounded-xl bg-neon-rose/10 text-neon-rose'
+    };
+
+    var lens = $('#lens'), tabs = $$('.hud-tab'), currentMode = 'nutrition', feedIdx = 0, timers = [];
+    function later(fn, ms) { var id = setTimeout(fn, ms); timers.push(id); return id; }
+    function clearLater() { timers.forEach(clearTimeout); timers = []; }
+
+    function hudStatus() {
+      var el = $('#hud-status'); if (!el) return;
+      var d = new Date();
+      el.innerHTML = '<span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-neon-rose blink"></span>REC</span>' +
+        '<span>' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</span><span>OMNI·OS 2.1</span><span>BAT 82%</span>';
+    }
+    hudStatus(); setInterval(hudStatus, 15000);
+
+    function renderPanel(mode) {
+      var m = MODES[mode];
+      $('#panel-kicker').textContent = m.kicker;
+      $('#panel-title').textContent = m.title;
+      $('#panel-desc').textContent = m.desc;
+      var wrap = $('#panel-icon-wrap');
+      wrap.className = TINTS[m.tint];
+      wrap.innerHTML = '<i data-lucide="' + m.icon + '" class="w-5 h-5"></i>';
+      $('#panel-stats').innerHTML = m.stats.map(function (s) {
+        return '<div class="rounded-xl bg-black/30 border hairline px-3 py-2.5"><dt class="text-[11px] text-faint">' + s[0] + '</dt><dd class="text-[15px] font-semibold mt-0.5 tabular-nums">' + s[1] + '</dd></div>';
+      }).join('');
+      $('#feed').innerHTML = '';
+      feedIdx = 0;
+      for (var i = 0; i < 2; i++) pushFeed();
+      refreshIcons();
+    }
+
+    function pushFeed() {
+      var m = MODES[currentMode], item = m.feed[feedIdx % m.feed.length]; feedIdx++;
+      var d = new Date(), li = document.createElement('li');
+      li.className = 'feed-item flex items-center gap-3 rounded-xl bg-black/30 border hairline px-3 py-2.5';
+      li.innerHTML = '<span class="grid place-items-center w-8 h-8 rounded-lg shrink-0" style="background:' + item[3] + '1f;color:' + item[3] + '"><i data-lucide="' + item[0] + '" class="w-4 h-4"></i></span>' +
+        '<div class="min-w-0 flex-1"><div class="text-[13px] font-medium truncate">' + item[1] + '</div><div class="text-[11px] text-faint truncate">' + item[2] + '</div></div>' +
+        '<span class="text-[10px] font-mono text-faint shrink-0">' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + '</span>';
+      var feed = $('#feed'); feed.insertBefore(li, feed.firstChild);
+      while (feed.children.length > 4) feed.removeChild(feed.lastChild);
+      refreshIcons();
+    }
+
+    function countTo(el, to, dur, decimals) {
+      if (!el) return;
+      var start = performance.now();
+      (function tick(now) {
+        var p = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - p, 3);
+        el.textContent = (to * e).toFixed(decimals || 0);
+        if (p < 1) requestAnimationFrame(tick);
+      })(start);
+    }
+
+    function runNutrition() {
+      var scene = $('[data-scene="nutrition"]');
+      var bR = $('#bbox-rice'), bS = $('#bbox-salmon'), card = $('#macro-card'), toast = $('#logged-toast'), strip = $('#macro-strip');
+      [bR, bS, card, toast, strip].forEach(function (el) { el.classList.remove('show'); });
+      $$('#macro-card .macro-bar > i').forEach(function (b) { b.style.width = '0'; });
+      $('#kcal').textContent = '0'; $('#m-carb').textContent = '0';
+      scene.classList.remove('scanning'); void scene.offsetWidth; scene.classList.add('scanning');
+      later(function () { bR.classList.add('show'); }, 700);
+      later(function () { bS.classList.add('show'); }, 1000);
+      later(function () {
+        card.classList.add('show'); strip.classList.add('show');
+        countTo($('#kcal'), 260, 1100); countTo($('#m-carb'), 53, 1100);
+        $$('#macro-card .macro-bar > i').forEach(function (b) { b.style.width = b.getAttribute('data-w') + '%'; });
+      }, 1300);
+      later(function () { toast.classList.add('show'); }, 2500);
+    }
+
+    // Focus timer + distraction cycle
+    var focusSeconds = 42 * 60 + 17;
+    setInterval(function () {
+      focusSeconds++;
+      var h = Math.floor(focusSeconds / 3600), m = Math.floor(focusSeconds % 3600 / 60), s = focusSeconds % 60;
+      var el = $('#focus-timer'); if (el) el.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
+    }, 1000);
+    var distractions = ['Phone pickup detected · 3rd this hour', 'Gaze off-task for 45s', 'Social feed spotted on screen'];
+    var dIdx = 0;
+    function runFocus() {
+      var dEl = $('#distraction');
+      dEl.classList.remove('show');
+      (function cycle() {
+        later(function () {
+          $('#distraction-text').textContent = distractions[dIdx++ % distractions.length];
+          dEl.classList.add('show');
+          $('#focus-score').textContent = '87'; $('#focus-bar').style.width = '87%';
+          later(function () {
+            dEl.classList.remove('show');
+            $('#focus-score').textContent = '92'; $('#focus-bar').style.width = '92%';
+            cycle();
+          }, 3800);
+        }, 2600);
+      })();
+    }
+
+    // Biometric: strain ring, HR jitter
+    var hr = 152;
+    function runBio() {
+      var ringEl = $('#strain-ring'), C = 263.9;
+      ringEl.style.strokeDashoffset = C;
+      later(function () { ringEl.style.strokeDashoffset = (C * (1 - 14.2 / 21)).toFixed(1); }, 200);
+      countTo($('#strain'), 14.2, 1400, 1);
+    }
+    setInterval(function () {
+      if (currentMode !== 'bio') return;
+      hr = Math.max(144, Math.min(166, hr + Math.round((Math.random() - 0.45) * 4)));
+      $('#hr').textContent = hr;
+    }, 1100);
+
+    // ECG canvas
+    (function ecg() {
+      var cv = $('#ecg'); if (!cv) return;
+      var ctx = cv.getContext('2d'), buf = [], beat = 0, last = performance.now();
+      function sample(p) {
+        p = p % 1;
+        if (p < 0.1) return Math.sin(p / 0.1 * Math.PI) * 0.12;
+        if (p < 0.16) return 0;
+        if (p < 0.18) return -0.15 * (p - 0.16) / 0.02;
+        if (p < 0.21) return -0.15 + 1.15 * (p - 0.18) / 0.03;
+        if (p < 0.24) return 1 - 1.35 * (p - 0.21) / 0.03;
+        if (p < 0.27) return -0.35 + 0.35 * (p - 0.24) / 0.03;
+        if (p < 0.34) return 0;
+        if (p < 0.5) return Math.sin((p - 0.34) / 0.16 * Math.PI) * 0.25;
+        return 0;
+      }
+      function size() {
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        cv.width = Math.max(1, cv.clientWidth * dpr); cv.height = Math.max(1, cv.clientHeight * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      if ('ResizeObserver' in window) new ResizeObserver(size).observe(cv); else window.addEventListener('resize', size);
+      size();
+      function draw(now) {
+        requestAnimationFrame(draw);
+        var dt = Math.min(0.05, (now - last) / 1000); last = now;
+        if (currentMode !== 'bio') return;
+        var w = cv.clientWidth, h = cv.clientHeight, step = 2, maxLen = Math.ceil(w / step) + 2;
+        var samples = Math.max(1, Math.round(dt * 120));
+        for (var i = 0; i < samples; i++) { beat += (hr / 60) * (dt / samples); buf.push(sample(beat)); }
+        while (buf.length > maxLen) buf.shift();
+        ctx.clearRect(0, 0, w, h);
+        var grad = ctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, 'rgba(255,77,109,0)'); grad.addColorStop(0.7, 'rgba(255,77,109,.9)'); grad.addColorStop(1, '#ffb3c1');
+        ctx.strokeStyle = grad; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+        ctx.shadowColor = 'rgba(255,77,109,.8)'; ctx.shadowBlur = 6;
+        ctx.beginPath();
+        var off = w - (buf.length - 1) * step;
+        for (var j = 0; j < buf.length; j++) {
+          var x = off + j * step, y = h * 0.62 - buf[j] * h * 0.5;
+          if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke(); ctx.shadowBlur = 0;
+        if (buf.length) {
+          ctx.fillStyle = '#fff';
+          ctx.beginPath(); ctx.arc(off + (buf.length - 1) * step, h * 0.62 - buf[buf.length - 1] * h * 0.5, 2.2, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      requestAnimationFrame(draw);
+    })();
+
+    function setMode(mode) {
+      if (!MODES[mode]) return;
+      currentMode = mode;
+      clearLater();
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('data-mode') === mode;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+      });
+      lens.setAttribute('aria-labelledby', 'tab-' + mode);
+      $$('.hud-scene', lens).forEach(function (s) { s.classList.toggle('active', s.getAttribute('data-scene') === mode); });
+      renderPanel(mode);
+      if (mode === 'nutrition') runNutrition();
+      if (mode === 'focus') runFocus();
+      if (mode === 'bio') runBio();
+    }
+
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { setMode(t.getAttribute('data-mode')); });
+      t.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        var n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        n.focus(); setMode(n.getAttribute('data-mode'));
+      });
+    });
+    $('#replay').addEventListener('click', function () { setMode(currentMode); });
+    setInterval(pushFeed, 5200);
+
+    // Start the demo once it scrolls into view
+    var hudStarted = false;
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (en, obs) {
+        if (en[0].isIntersecting && !hudStarted) { hudStarted = true; setMode('nutrition'); obs.disconnect(); }
+      }, { threshold: 0.35 }).observe(lens);
+      renderPanel('nutrition');
+    } else { setMode('nutrition'); }
+
+    /* ---------------- Tech roadmap ---------------- */
+    var PHASES = {
+      1: {
+        title: 'Inference pipeline · Phase 1', sub: 'keyframe → cloud → structured event', flow: '#00F2FE',
+        nodes: [
+          ['glasses', 'Smart Glass Camera', 'Event-triggered keyframes', '#00F2FE'],
+          ['smartphone', 'Phone Relay', 'BLE / Wi-Fi burst upload', '#4FACFE'],
+          ['cloud', 'Multimodal Vision LLM', 'Frontier model API', '#00F2FE'],
+          ['braces', 'Structured Event', 'JSON · macros · context', '#4FACFE'],
+          ['heart-pulse', 'HealthKit · WHOOP', 'Auto-logged', '#00F5A0']
+        ]
+      },
+      2: {
+        title: 'Inference pipeline · Phase 2', sub: 'on-device perception → local event graph', flow: '#00F5A0',
+        nodes: [
+          ['glasses', 'Smart Glass Camera', 'Continuous low-power vision', '#00F5A0'],
+          ['cpu', 'On-Device NPU', 'Distilled ViT · 40M · INT8', '#00F5A0'],
+          ['network', 'Local Event Graph', 'Vision + biometric fusion', '#00F2FE'],
+          ['shield-check', 'Private Sync', 'Events only · E2E encrypted', '#4FACFE']
+        ]
+      }
+    };
+    var METRICS = [
+      ['Inference latency', '~1.8 s', '~120 ms', 90, 7],
+      ['Cost per event', '$0.004', '≈ $0.00002', 85, 3],
+      ['Data leaving device', 'Keyframes (encrypted)', 'Events only', 72, 10],
+      ['Works offline', 'No', 'Yes', 4, 100],
+      ['Scene coverage', 'Open-world', 'Top 2k classes + fallback', 100, 78]
+    ];
+
+    function renderPhase(p) {
+      var ph = PHASES[p];
+      $('#pipe-title').textContent = ph.title;
+      $('#pipe-sub').textContent = ph.sub;
+      var html = '';
+      ph.nodes.forEach(function (n, i) {
+        if (i > 0) html += '<div class="connector" style="--flow:' + ph.flow + '" aria-hidden="true"></div>';
+        html += '<div class="pipe-node md:w-[168px] shrink-0 rounded-2xl bg-black/40 border hairline p-4 flex md:flex-col items-center md:items-start gap-3" style="animation-delay:' + (i * 90) + 'ms">' +
+          '<span class="grid place-items-center w-10 h-10 rounded-xl shrink-0" style="background:' + n[3] + '1a;color:' + n[3] + ';box-shadow:0 0 24px -8px ' + n[3] + '"><i data-lucide="' + n[0] + '" class="w-5 h-5"></i></span>' +
+          '<div><div class="text-[14px] font-semibold leading-tight">' + n[1] + '</div><div class="text-[12px] text-faint mt-1">' + n[2] + '</div></div></div>';
+      });
+      $('#pipeline').innerHTML = html;
+
+      $('#metrics').innerHTML = METRICS.map(function (m) {
+        var o1 = p === 1 ? 1 : 0.3, o2 = p === 2 ? 1 : 0.3;
+        return '<div><div class="flex items-center justify-between text-[13px]"><span class="text-soft">' + m[0] + '</span>' +
+          '<span class="font-mono text-[12px]"><span class="' + (p === 1 ? 'text-neon-cyan' : 'text-faint') + '">' + m[1] + '</span> <span class="text-faint">/</span> <span class="' + (p === 2 ? 'text-neon-emerald' : 'text-faint') + '">' + m[2] + '</span></span></div>' +
+          '<div class="mt-2 space-y-1.5"><div class="metric-bar"><i style="width:' + m[3] + '%;background:linear-gradient(90deg,#00F2FE,#4FACFE);opacity:' + o1 + '"></i></div>' +
+          '<div class="metric-bar"><i style="width:' + m[4] + '%;background:linear-gradient(90deg,#00F5A0,#7CFFCB);opacity:' + o2 + '"></i></div></div></div>';
+      }).join('');
+
+      $$('.phase-btn').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-phase') === String(p))); });
+      refreshIcons();
+    }
+    $$('.phase-btn').forEach(function (b) {
+      b.addEventListener('click', function () { renderPhase(parseInt(b.getAttribute('data-phase'), 10)); });
+    });
+    renderPhase(1);
+
+    /* ---------------- Pitch modal ---------------- */
+    var modal = $('#pitch-modal'), lastFocus = null;
+    function openPitch() {
+      lastFocus = document.activeElement;
+      modal.classList.remove('hidden-modal');
+      document.body.classList.add('modal-open');
+      setTimeout(function () { var c = $('[data-close-pitch][aria-label]', modal); if (c) c.focus(); }, 60);
+    }
+    function closePitch() {
+      modal.classList.add('hidden-modal');
+      document.body.classList.remove('modal-open');
+      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+    }
+    $$('[data-open-pitch]').forEach(function (b) { b.addEventListener('click', openPitch); });
+    $$('[data-close-pitch]', modal).forEach(function (b) { b.addEventListener('click', closePitch); });
+    document.addEventListener('keydown', function (e) {
+      if (modal.classList.contains('hidden-modal')) return;
+      if (e.key === 'Escape') { closePitch(); return; }
+      if (e.key === 'Tab') {
+        var f = $$('button, a[href], [tabindex]:not([tabindex="-1"])', modal).filter(function (el) { return el.offsetParent !== null; });
+        if (!f.length) return;
+        var first = f[0], lastEl = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); lastEl.focus(); }
+        else if (!e.shiftKey && document.activeElement === lastEl) { e.preventDefault(); first.focus(); }
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
